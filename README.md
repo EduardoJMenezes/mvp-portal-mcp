@@ -40,3 +40,5 @@ API_JAR=../mvp-portal-aluno/target/api-0.0.1-SNAPSHOT.jar .venv/bin/python -m py
 | [docs/IMPORTADOR-SIMULADO.md](docs/IMPORTADOR-SIMULADO.md) | o `.docx` e os prints virando simulado |
 | [docs/VIMEO.md](docs/VIMEO.md) | token, escopos, embed unlisted, filtro de rede |
 | [CLAUDE.md](CLAUDE.md) | contexto para trabalhar neste repositório |
+
+Produção: serviço `mcp` do Railway, deploy automático a cada push em `main`.
