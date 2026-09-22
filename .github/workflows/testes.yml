@@ -1,0 +1,68 @@
+# A suíte do adaptador fala HTTP com a API de verdade: testar as tools sem
+# ela é testar o httpx. A API vem do repositório dela, numa versão fixada em
+# API_REF — subir a versão é editar uma linha, de propósito: um push lá não
+# muda o que se testa aqui sem alguém decidir.
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  API_REPO: EduardoJMenezes/mvp-portal-aluno
+  API_REF: main
+
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres # só do container efêmero da CI
+          POSTGRES_DB: plataforma_mvp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plataforma_mvp_test
+      API_BASE_URL: http://127.0.0.1:8082
+      SERVICO_TOKEN: token-de-servico-so-da-ci-com-mais-de-32
+      MCP_BASE_URL: https://mcp.teste
+      API_JAR: ${{ github.workspace }}/api/target/api.jar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.API_REPO }}
+          ref: ${{ env.API_REF }}
+          path: api
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: temurin
+          cache: maven
+      - name: construir a API
+        working-directory: api
+        run: ./mvnw -B -q package -DskipTests && cp target/api-*-SNAPSHOT.jar target/api.jar
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -e ".[dev]"
+      - name: pytest
+        shell: bash
+        run: |
+          set +e
+          python -m pytest tests -q -rs -rf | tee pytest.txt
+          codigo=${PIPESTATUS[0]}
+          echo "::notice title=pytest::$(tail -n 1 pytest.txt)"
+          grep -E "^(FAILED|ERROR)" pytest.txt | head -20 | while IFS= read -r linha; do
+            echo "::error title=teste::$linha"
+          done
+          exit "$codigo"

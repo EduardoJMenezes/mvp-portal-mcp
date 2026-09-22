@@ -1,0 +1,40 @@
+[project]
+name = "mvp-portal-mcp"
+version = "0.2.0"
+description = "O adaptador MCP da plataforma: as tools do Claude, a leitura do Vimeo, do .docx e dos prints — sem banco"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "python-dotenv>=1.0",
+    # 4.x traz MultiAuth e os providers de OAuth que o conector remoto exige.
+    "fastmcp>=4.0,<5",
+    # Onde o proxy OAuth guarda cliente e token entre um deploy e outro.
+    "py-key-value-aio[postgresql]>=0.3",
+    "httpx>=0.27",
+    "python-multipart>=0.0.12",
+    # Recorta a margem branca das figuras e amplia o print para a escala do recorte.
+    "pillow>=10",
+    # XML de .docx que veio de fora: recusa DTD e entidade.
+    "defusedxml>=0.7",
+]
+
+[project.optional-dependencies]
+# SQLAlchemy, psycopg e bcrypt só existem para semear o banco de teste
+# (tests/modelos.py): o app não os importa.
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24", "sqlalchemy>=2.0", "psycopg[binary]>=3.2", "bcrypt>=4.2"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["paginas/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

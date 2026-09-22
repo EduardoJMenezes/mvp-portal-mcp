@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enviar arquivo</title>
+<meta name="description" content="A página do link de envio: o .docx do simulado ou os prints das questões.">
+<style>
+  :root { --papel: #fff; --canvas: #f6f5f2; --tinta: #1d1b17; --suave: #6b6760; --borda: #dcd9d2; --acento: #5b4bd6; --erro: #a12a2a; --ok: #1f6f3f; --atencao: #8a5a00; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --papel: #1e1d1a; --canvas: #141311; --tinta: #efede8; --suave: #a7a39a; --borda: #3a3834; --acento: #a89cff; --erro: #ff8a8a; --ok: #7fd49a; --atencao: #f0c060; } }
+  :root[data-theme="dark"] { --papel: #1e1d1a; --canvas: #141311; --tinta: #efede8; --suave: #a7a39a; --borda: #3a3834; --acento: #a89cff; --erro: #ff8a8a; --ok: #7fd49a; --atencao: #f0c060; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--canvas); color: var(--tinta); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 40px 16px; }
+  main { max-width: 640px; margin: 0 auto; background: var(--papel); border: 1px solid var(--borda); border-radius: 14px; padding: 28px; }
+  h1 { margin: 0; font-size: 24px; }
+  .legenda { color: var(--suave); margin: 4px 0 20px; font-size: 15px; }
+  .aviso { border-radius: 10px; padding: 12px 14px; border: 1px solid var(--borda); margin-bottom: 14px; }
+  .aviso.erro { border-color: var(--erro); color: var(--erro); }
+  .aviso.ok { border-color: var(--ok); color: var(--ok); }
+  .aviso.atencao { border-color: var(--atencao); color: var(--atencao); }
+  label.caixa { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 32px 24px; border: 2px dashed var(--borda); border-radius: 14px; background: var(--canvas); text-align: center; cursor: pointer; }
+  label.caixa.arrastando { border-color: var(--acento); }
+  label.caixa strong { font-weight: 600; }
+  label.caixa small { color: var(--suave); }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  ol.prints { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  ol.prints li { border: 1px solid var(--borda); border-radius: 10px; padding: 8px; }
+  ol.prints img { width: 100%; height: 110px; object-fit: contain; border-radius: 6px; background: #fff; }
+  ol.prints .linha { display: flex; justify-content: space-between; font-size: 14px; margin-top: 6px; }
+  ol.prints button { background: none; border: 0; color: var(--erro); cursor: pointer; padding: 0; font: inherit; }
+  button.enviar { margin-top: 16px; background: var(--acento); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.enviar:disabled { opacity: .5; cursor: default; }
+  button.enviar:focus-visible, label.caixa:focus-within { outline: 3px solid var(--acento); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="titulo">Enviar arquivo</h1>
+  <p class="legenda" id="legenda">Lendo o link…</p>
+  <div id="mensagens"></div>
+  <div id="formulario" hidden></div>
+</main>
+<script>
+(function () {
+  var token = (location.pathname.replace(/\/+$/, "").split("/enviar/")[1] || new URLSearchParams(location.search).get("token") || "");
+  var base = "/api/importacoes/" + encodeURIComponent(token);
+  var mensagens = document.getElementById("mensagens");
+  var formulario = document.getElementById("formulario");
+
+  function aviso(tom, texto) {
+    var p = document.createElement("div");
+    p.className = "aviso " + tom;
+    p.textContent = texto;
+    mensagens.replaceChildren(p);
+  }
+
+  async function pedir(url, opcoes) {
+    var r;
+    try { r = await fetch(url, opcoes); } catch (e) { throw new Error("Não foi possível falar com o servidor. Verifique a conexão e tente de novo."); }
+    var corpo = null;
+    try { corpo = await r.json(); } catch (e) { /* sem corpo */ }
+    if (!r.ok) throw new Error((corpo && corpo.detail) || ("Erro " + r.status));
+    return corpo;
+  }
+
+  function recibo(pedido, dados) {
+    var prints = pedido.formato === "prints";
+    var texto = prints ? dados.prints + " print(s) recebido(s). " : (dados.titulo + ": recebido. " + dados.questoes_completas + " de " + dados.questoes_lidas + " questões lidas por completo, " + dados.figuras + " figura(s). ");
+    aviso("ok", texto + (dados.mensagem || ""));
+    formulario.hidden = true;
+  }
+
+  function formularioDocx(pedido) {
+    formulario.innerHTML = '<label class="caixa"><strong id="nome">Escolha o arquivo .docx do simulado</strong><small id="tamanho">Até 25 MB</small><input id="arquivo" type="file" accept=".docx"></label><button class="enviar" id="botao" disabled>Enviar</button>';
+    var entrada = formulario.querySelector("#arquivo");
+    var botao = formulario.querySelector("#botao");
+    entrada.addEventListener("change", function () {
+      var f = entrada.files[0];
+      formulario.querySelector("#nome").textContent = f ? f.name : "Escolha o arquivo .docx do simulado";
+      formulario.querySelector("#tamanho").textContent = f ? Math.ceil(f.size / 1024) + " KB" : "Até 25 MB";
+      botao.disabled = !f;
+    });
+    botao.addEventListener("click", async function () {
+      var corpo = new FormData();
+      corpo.append("arquivo", entrada.files[0]);
+      botao.disabled = true; botao.textContent = "Lendo o documento…"; mensagens.replaceChildren();
+      try { recibo(pedido, await pedir(base + "/arquivo", { method: "POST", body: corpo })); }
+      catch (e) { aviso("erro", e.message); botao.disabled = false; botao.textContent = "Enviar"; }
+    });
+  }
+
+  function formularioPrints(pedido) {
+    var prints = [];
+    formulario.innerHTML = '<label class="caixa" id="caixa"><strong>Cole com Ctrl+V, arraste ou clique para escolher</strong><small>PNG, JPEG, WEBP ou GIF de até 5 MB, na ordem das questões (até 50)</small><input id="arquivos" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label><ol class="prints" id="lista"></ol><button class="enviar" id="botao" disabled>Enviar</button>';
+    var caixa = formulario.querySelector("#caixa");
+    var lista = formulario.querySelector("#lista");
+    var botao = formulario.querySelector("#botao");
+    function desenhar() {
+      lista.replaceChildren();
+      prints.forEach(function (f, i) {
+        var li = document.createElement("li");
+        var img = document.createElement("img"); img.src = URL.createObjectURL(f); img.alt = "Print " + (i + 1) + ": " + f.name;
+        var linha = document.createElement("div"); linha.className = "linha";
+        var n = document.createElement("strong"); n.textContent = String(i + 1);
+        var remover = document.createElement("button"); remover.type = "button"; remover.textContent = "remover";
+        remover.addEventListener("click", function () { prints.splice(i, 1); desenhar(); });
+        linha.append(n, remover); li.append(img, linha); lista.append(li);
+      });
+      botao.disabled = !prints.length;
+      botao.textContent = prints.length === 1 ? "Enviar 1 print" : "Enviar " + prints.length + " prints";
+    }
+    function adicionar(arquivos) {
+      Array.prototype.forEach.call(arquivos || [], function (f) { if (f.type && f.type.indexOf("image/") === 0) prints.push(f); });
+      desenhar();
+    }
+    window.addEventListener("paste", function (e) { adicionar(e.clipboardData && e.clipboardData.files); });
+    caixa.addEventListener("dragover", function (e) { e.preventDefault(); caixa.classList.add("arrastando"); });
+    caixa.addEventListener("dragleave", function () { caixa.classList.remove("arrastando"); });
+    caixa.addEventListener("drop", function (e) { e.preventDefault(); caixa.classList.remove("arrastando"); adicionar(e.dataTransfer.files); });
+    formulario.querySelector("#arquivos").addEventListener("change", function (e) { adicionar(e.target.files); e.target.value = ""; });
+    botao.addEventListener("click", async function () {
+      var corpo = new FormData();
+      prints.forEach(function (f) { corpo.append("arquivos", f); });
+      botao.disabled = true; botao.textContent = "Enviando…"; mensagens.replaceChildren();
+      try { recibo(pedido, await pedir(base + "/prints", { method: "POST", body: corpo })); }
+      catch (e) { aviso("erro", e.message); desenhar(); }
+    });
+    desenhar();
+  }
+
+  async function iniciar() {
+    if (!token) { aviso("erro", "Este endereço não tem o código do link. Abra o link exatamente como chegou no chat."); document.getElementById("legenda").textContent = ""; return; }
+    var pedido;
+    try { pedido = await pedir(base); } catch (e) { aviso("erro", e.message); document.getElementById("legenda").textContent = ""; return; }
+    var prints = pedido.formato === "prints";
+    document.getElementById("titulo").textContent = prints ? "Enviar prints das questões" : "Enviar simulado";
+    document.getElementById("legenda").textContent = (pedido.titulo ? pedido.titulo + " · " : "") + (pedido.turmas && pedido.turmas.length ? pedido.turmas.join(", ") + " · " : "") + "pedido por " + pedido.pedido_por + " no chat · vale até " + pedido.expira_em;
+    if (pedido.situacao !== "AGUARDANDO") {
+      aviso("atencao", pedido.situacao === "RECEBIDO" ? "Este link já recebeu o envio. Volte ao chat." : "Este link expirou. Peça um novo no chat.");
+      return;
+    }
+    formulario.hidden = false;
+    if (prints) formularioPrints(pedido); else formularioDocx(pedido);
+  }
+  iniciar();
+})();
+</script>
+</body>
+</html>
