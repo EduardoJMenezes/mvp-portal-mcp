@@ -141,6 +141,11 @@ class VimeoAPI:
                 if e.response.status_code != 404:
                     raise
                 dados = await self._get(cli, "/me/projects", per_page=100)
+            itens = list(dados.get("data", []))
+            # O acervo passa de 100 pastas: segue as páginas até o fim.
+            while proxima := (dados.get("paging") or {}).get("next"):
+                dados = await self._get(cli, proxima)
+                itens += dados.get("data", [])
 
         return [
             PastaVimeo(
@@ -150,7 +155,7 @@ class VimeoAPI:
                     "total"
                 ),
             )
-            for p in dados.get("data", [])
+            for p in itens
         ]
 
     async def listar_videos(
@@ -159,10 +164,21 @@ class VimeoAPI:
         nome_pasta = None
         async with self._client() as cli:
             if pasta_id:
-                for p in await self.listar_pastas():
-                    if p.id == pasta_id:
-                        nome_pasta = p.nome
-                        break
+                pastas = await self.listar_pastas()
+                alvo = next((p for p in pastas if p.id == pasta_id), None)
+                if alvo is None and not pasta_id.isdigit():
+                    # Quem chama é um LLM e costuma passar o nome; nomes se repetem no acervo.
+                    mesmas = [p for p in pastas if p.nome.lower() == pasta_id.strip().lower()]
+                    if len(mesmas) != 1:
+                        raise RegraDeNegocio(
+                            f"Há {len(mesmas)} pastas chamadas '{pasta_id}' no Vimeo: passe o id "
+                            f"({', '.join(p.id for p in mesmas)})."
+                            if mesmas
+                            else f"Não há pasta '{pasta_id}' no Vimeo. Veja nomes e ids em listar_pastas_vimeo."
+                        )
+                    alvo = mesmas[0]
+                if alvo is not None:
+                    pasta_id, nome_pasta = alvo.id, alvo.nome
                 caminho = f"/me/folders/{pasta_id}/videos"
                 try:
                     dados = await self._get(
