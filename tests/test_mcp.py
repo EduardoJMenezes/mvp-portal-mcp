@@ -13,6 +13,7 @@ import app.mcp_server.tools  # noqa: F401  isort:skip
 import app.mcp_server.tools_estrutura  # noqa: F401  isort:skip
 import app.mcp_server.tools_importacao  # noqa: F401  isort:skip
 import app.mcp_server.tools_simulado  # noqa: F401  isort:skip
+import app.mcp_server.tools_aulas  # noqa: F401  isort:skip
 from app.identidade import Papel
 from tests.modelos import TokenMCP, Usuario
 from tests.senhas import hash_senha, hash_token, novo_token_mcp
@@ -130,7 +131,7 @@ def test_tools_registradas_e_anotadas():
     escritas = {"criar_questao_rascunho", "importar_videos_como_itens",
                 "criar_simulado_rascunho", "publicar_rascunho", "importar_simulado_docx",
                 "completar_questao_importada", "importar_prints", "recortar_figura",
-                "importar_pasta_vimeo_como_rascunho", *ALTERAM_NA_HORA}
+                "importar_pasta_vimeo_como_rascunho", "agendar_aula", *ALTERAM_NA_HORA}
     for nome, tool in tools.items():
         esperado = nome not in escritas
         assert tool.annotations.read_only_hint is esperado, f"{nome} com read_only_hint errado"
