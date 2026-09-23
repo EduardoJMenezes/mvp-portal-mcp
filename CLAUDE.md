@@ -31,6 +31,7 @@ constrói a API a partir do repositório dela em `API_REF` (fixado de propósito
 ## Produção (Railway, serviço `mcp`)
 
 Variáveis: `API_BASE_URL` (endereço interno da API), `SERVICO_TOKEN` (o mesmo
-da API), `MCP_BASE_URL` (domínio público deste serviço), `VIMEO_ACCESS_TOKEN`,
+da API), `MCP_BASE_URL` (domínio público deste serviço), `PORTAL_URL` (domínio do portal, para onde
+vai o "aprove no portal"), `VIMEO_ACCESS_TOKEN`,
 as três `MCP_OAUTH_*` e `DATABASE_URL` (só para o proxy OAuth guardar o
 registro do conector entre deploys). Healthcheck em `/saude`.
