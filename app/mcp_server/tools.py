@@ -677,9 +677,13 @@ def _cliente_pergunta_ao_professor(ctx: Context) -> bool:
     return False
 
 
+def _onde_aprovar(rascunho_id: int) -> str:
+    base = (get_settings().portal_url or "").rstrip("/")
+    return f"{base}/admin/rascunhos/revisar/?id={rascunho_id}" if base else "Admin › Rascunhos"
+
+
 def _aprovar_no_portal(rascunho_id: int) -> dict:
-    base = (get_settings().mcp_base_url or "").rstrip("/")
-    onde = f"{base}/admin/rascunhos/revisar/?id={rascunho_id}" if base else "Admin › Rascunhos"
+    onde = _onde_aprovar(rascunho_id)
     return {
         "rascunho_id": rascunho_id,
         "publicado": False,
@@ -696,9 +700,12 @@ def _recusado(rascunho_id: int) -> dict:
     return {
         "rascunho_id": rascunho_id,
         "publicado": False,
+        "aprovar_em": _onde_aprovar(rascunho_id),
         "mensagem": (
             "Publicação não confirmada. Nada foi alterado — o rascunho continua "
-            "disponível para revisão."
+            "disponível para revisão. Se o professor não viu pedido de confirmação, "
+            "foi o aplicativo que respondeu sozinho: a aprovação é no portal, em "
+            f"{_onde_aprovar(rascunho_id)}, botão 'Aprovar e publicar'. Não tente de novo."
         ),
     }
 

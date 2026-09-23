@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # três variáveis abaixo, o servidor passa a aceitar os dois — ver
     # docs/MCP-OAUTH.md. `mcp_base_url` também é a raiz da página de envio.
     mcp_base_url: str | None = None
+    # O portal (a API em Java) mora em outro domínio: é para lá que vai o
+    # professor aprovar um rascunho quando o cliente não mostra a confirmação.
+    portal_url: str | None = None
     mcp_oauth_github_client_id: str | None = None
     mcp_oauth_github_client_secret: str | None = None
 
