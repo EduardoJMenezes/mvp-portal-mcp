@@ -20,8 +20,11 @@ from app.mcp_server.tools import SOMENTE_LEITURA
 def listar_aulas() -> list[dict]:
     """Lista as aulas ao vivo: horário, turmas, se já tem sala no Zoom e se grava.
 
-    `estado` é RASCUNHO, AGENDADA (publicada, ainda não abriu), ABERTA (a porta
-    abre 15 minutos antes) ou ENCERRADA. Horários em UTC — converta para
+    `estado` é RASCUNHO, AGENDADA (publicada, a porta ainda não abriu),
+    AGUARDANDO (a porta abriu 15 minutos antes, o professor ainda não iniciou),
+    ABERTA (a sala está no ar) ou ENCERRADA (o horário passou, ou o professor
+    encerrou a sala). `assistir` aponta a gravação no curso depois de aprovada.
+    Horários em UTC — converta para
     Brasília ao falar com o professor. `gravacao` diz em que pé está a gravação
     (vazio, "enviando" ou o id do vídeo no Vimeo), e `presentes`, quem entrou
     pelo link do portal.
