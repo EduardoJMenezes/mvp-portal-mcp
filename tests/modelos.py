@@ -180,7 +180,6 @@ class Turma(Base, Rastreavel):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(120), nullable=False)
-    ano: Mapped[int] = mapped_column(Integer, nullable=False)
 
     __table_args__ = (_vivo("uq_turma_nome", "nome"),)
 

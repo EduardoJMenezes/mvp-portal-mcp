@@ -150,8 +150,8 @@ def mundo(db):
     pedro = Usuario(nome="Pedro", email="pedro@x.demo", senha_hash=hash_senha("x"), papel=Papel.ALUNO)
     db.add_all([professor, joao, pedro])
 
-    t2027 = Turma(nome="Extensivo 2027", ano=2027)
-    t2026 = Turma(nome="Extensivo 2026", ano=2026)
+    t2027 = Turma(nome="Extensivo 2027")
+    t2026 = Turma(nome="Extensivo 2026")
     db.add_all([t2027, t2026])
     db.flush()
     db.add_all([Matricula(usuario_id=joao.id, turma_id=t2027.id), Matricula(usuario_id=pedro.id, turma_id=t2026.id)])

@@ -77,7 +77,7 @@ def listar_turmas() -> list[dict]:
     ("Extensivo 2027"), então normalmente basta chamar esta uma vez para saber
     o que existe.
 
-    Retorna [{id, nome, ano, alunos, modulos, itens_publicados, itens_em_rascunho}].
+    Retorna [{id, nome, alunos, modulos, itens_publicados, itens_em_rascunho}].
     """
     return comando("listar_turmas")
 
