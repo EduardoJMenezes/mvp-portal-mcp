@@ -132,6 +132,10 @@ Aula ao vivo: agendar_aula com publicar=true cria a sala no Zoom e a turma já
 vê a aula no capítulo. Mesmo combinado: mostre título, dia e hora (Brasília),
 duração, turma e capítulo, e só chame com publicar=true depois do ok no chat.
 
+Módulos: moram numa biblioteca e as turmas os recebem (atribuir_turmas,
+copiar_modulos); uma aula pode ser só de algumas turmas. Também alteram na
+hora: preview e ok no chat antes.
+
 Menu do aluno: cada turma tem o seu, e cada botão é uma feature (curso, aulas
 ao vivo, simulados, materiais) recortada por uma categoria livre. definir_menu
 e copiar_menu também alteram na hora: preview no chat e ok antes.

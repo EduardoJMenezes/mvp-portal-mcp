@@ -37,6 +37,7 @@ from tests.modelos import (  # noqa: E402
     Item,
     Matricula,
     Modulo,
+    ModuloTurma,
     Questao,
     QuestaoAssunto,
     Status,
@@ -164,9 +165,10 @@ def mundo(db):
     db.flush()
 
     def _modulo(turma, nome, ordem=1):
-        modulo = Modulo(turma_id=turma.id, nome=nome, ordem=ordem)
+        modulo = Modulo(nome=nome, ordem=ordem)
         db.add(modulo)
         db.flush()
+        db.add(ModuloTurma(modulo_id=modulo.id, turma_id=turma.id))
         aulas = SubModulo(modulo_id=modulo.id, nome="Aulas", tipo=TipoSubModulo.VIDEO, ordem=1)
         questoes = SubModulo(modulo_id=modulo.id, nome="Questões da apostila", tipo=TipoSubModulo.VIDEO, ordem=2)
         db.add_all([aulas, questoes])

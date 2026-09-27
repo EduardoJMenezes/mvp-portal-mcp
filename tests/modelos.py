@@ -185,7 +185,7 @@ class Turma(Base, Rastreavel):
     __table_args__ = (_vivo("uq_turma_nome", "nome"),)
 
     matriculas: Mapped[list[Matricula]] = relationship(back_populates="turma")
-    modulos: Mapped[list[Modulo]] = relationship(back_populates="turma", order_by="Modulo.ordem")
+    modulos: Mapped[list[Modulo]] = relationship(secondary="module_classes", order_by="Modulo.ordem")
 
 
 class Matricula(Base):
@@ -402,28 +402,32 @@ class QuestaoAssunto(Base):
 
 
 class Modulo(Base, Rastreavel):
-    """O capítulo como a turma o enxerga: "K01 - Introdução à química orgânica".
+    """O capítulo: "K01 - Introdução à química orgânica".
 
-    Pertence a uma turma justamente porque a numeração é da apostila dela. Não
-    tem `status`: o módulo aparece para o aluno quando tem item publicado
-    dentro, e some quando não tem. Assim não existe o estado contraditório de
-    módulo oculto com item publicado.
+    Mora numa biblioteca e as turmas o recebem (decisão 0011 do cofre), por
+    `module_classes`. Não tem `status`: aparece para o aluno quando tem item
+    publicado dentro, e some quando não tem.
     """
 
     __tablename__ = "modules"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    turma_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
     nome: Mapped[str] = mapped_column(String(160), nullable=False)
     ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     criado_em: Mapped[datetime] = _agora()
 
-    __table_args__ = (_vivo("uq_modulo_nome", "turma_id", "nome"),)
-
-    turma: Mapped[Turma] = relationship(back_populates="modulos")
     submodulos: Mapped[list[SubModulo]] = relationship(
         back_populates="modulo", order_by="SubModulo.ordem"
     )
+
+
+class ModuloTurma(Base):
+    """A turma que recebe o módulo."""
+
+    __tablename__ = "module_classes"
+
+    modulo_id: Mapped[int] = mapped_column(ForeignKey("modules.id"), primary_key=True)
+    turma_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), primary_key=True)
 
 
 class SubModulo(Base, Rastreavel):

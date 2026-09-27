@@ -24,7 +24,7 @@ ALTERAM_NA_HORA = {
     "criar_modulo", "criar_submodulo", "editar_modulo", "editar_item",
     "remover_do_curso", "cadastrar_assunto", "classificar_videos",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado",
-    "definir_menu", "copiar_menu",
+    "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
 }
 
 
@@ -117,7 +117,7 @@ def test_tools_registradas_e_anotadas():
         "buscar_estatisticas_simulado", "listar_simulados", "detalhar_questao",
         "detalhar_simulado", "buscar_ranking_simulado", "revisar_importacao",
         "importar_simulado_docx", "completar_questao_importada",
-        "importar_prints", "ver_prints", "recortar_figura", "listar_menu",
+        "importar_prints", "ver_prints", "recortar_figura", "listar_menu", "listar_biblioteca",
         # proposta, que nasce em rascunho
         "criar_questao_rascunho", "importar_videos_como_itens", "criar_simulado_rascunho",
         "importar_pasta_vimeo_como_rascunho", "publicar_rascunho",
