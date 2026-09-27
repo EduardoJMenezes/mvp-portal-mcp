@@ -23,7 +23,7 @@ def listar_aulas() -> list[dict]:
     `estado` é RASCUNHO, AGENDADA (publicada, a porta ainda não abriu),
     AGUARDANDO (a porta abriu 15 minutos antes, o professor ainda não iniciou),
     ABERTA (a sala está no ar) ou ENCERRADA (o horário passou, ou o professor
-    encerrou a sala). `assistir` aponta a gravação no curso depois de aprovada.
+    encerrou a sala). `assistir` aponta a gravação no curso.
     Horários em UTC — converta para
     Brasília ao falar com o professor. `gravacao` diz em que pé está a gravação
     (vazio, "enviando" ou o id do vídeo no Vimeo), e `presentes`, quem entrou
@@ -64,7 +64,7 @@ def agendar_aula(
     vivo — repasse isso a ele. Não há tool para publicar: é de propósito.
 
     Com `modulo`, a gravação, quando o Zoom avisar que ficou pronta, sobe ao
-    Vimeo e entra naquele sub-módulo como rascunho, para o professor aprovar.
+    Vimeo e entra publicada naquele sub-módulo.
     Sem `modulo`, ela só sobe ao Vimeo.
     """
     return comando(
