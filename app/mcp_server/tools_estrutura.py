@@ -77,6 +77,7 @@ def criar_modulo(
         list[str] | None,
         Field(description="Sub-módulos a criar junto, ex.: ['Aulas', 'Questões da apostila']"),
     ] = None,
+    categoria: Annotated[str | None, Field(description="Categoria livre, a gaveta do menu (ex.: 'Extensivo'); vazio tira")] = None,
 ) -> dict:
     """Cria um módulo (capítulo) na turma, com os sub-módulos que ele terá.
 
@@ -87,7 +88,7 @@ def criar_modulo(
     `submodulos`, nasce com 'Aulas' e 'Questões da apostila'. Módulo novo nasce
     vazio: nada aparece para o aluno até haver item publicado dentro.
     """
-    return comando("criar_modulo", turma=turma, nome=nome, submodulos=submodulos)
+    return comando("criar_modulo", turma=turma, nome=nome, submodulos=submodulos, categoria=categoria)
 
 
 @mcp.tool(name="criar_submodulo", annotations=ALTERA)
@@ -114,8 +115,12 @@ def editar_modulo(
     modulo: Annotated[str, Field(description="Módulo a alterar")],
     novo_nome: Annotated[str | None, Field(description="Novo nome, se for renomear")] = None,
     nova_ordem: Annotated[int | None, Field(description="Posição na lista da turma")] = None,
+    nova_categoria: Annotated[str | None, Field(description="Categoria livre, a gaveta do menu (ex.: 'Extensivo'); vazio tira")] = None,
 ) -> dict:
-    """Renomeia um módulo ou muda a posição dele na turma.
+    """Renomeia um módulo, muda a posição dele na turma ou a categoria.
+
+    A categoria é o que um botão do menu usa para mostrar só alguns capítulos
+    (ex.: "Extensivo 2027" = CURSO › "Extensivo"). Ver listar_menu.
 
     **Antes de chamar, mostre ao professor no chat como vai ficar e espere o
     ok dele.** A alteração vale na hora, inclusive para os alunos. Quem mexeu
@@ -127,6 +132,7 @@ def editar_modulo(
         modulo=modulo,
         novo_nome=novo_nome,
         nova_ordem=nova_ordem,
+        nova_categoria=nova_categoria,
     )
 
 

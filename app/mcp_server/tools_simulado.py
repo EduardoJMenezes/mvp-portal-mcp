@@ -169,8 +169,12 @@ async def editar_simulado(
             ),
         ),
     ] = None,
+    categoria: Annotated[
+        str | None,
+        Field(description="Categoria livre, a gaveta do menu (ex.: 'Rodmelo', 'Nacional'); vazio tira"),
+    ] = None,
 ) -> dict:
-    """Ajusta agenda, turmas, tempo de prova, título ou as questões de um simulado.
+    """Ajusta agenda, turmas, tempo de prova, título, categoria ou as questões de um simulado.
 
     **Antes de chamar, mostre ao professor no chat como vai ficar — use
     detalhar_simulado para o antes — e espere o ok dele.** Vale na hora.
@@ -182,6 +186,9 @@ async def editar_simulado(
     * aberto: só título e fechamento, e o fechamento só para mais tarde;
     * encerrado: só o título.
 
+    A categoria muda em qualquer situação: é o que o botão do menu usa para
+    separar, por exemplo, "Simulados Rodmelo" de "Simulados nacionais".
+
     Datas no horário de Brasília.
     """
     return await comando_async(
@@ -189,6 +196,7 @@ async def editar_simulado(
         simulado=simulado, titulo=titulo, abre_em=abre_em, fecha_em=fecha_em,
         duracao_minutos=duracao_minutos, turmas=turmas,
         questoes=await _questoes_com_resolucao(questoes),
+        categoria=categoria,
     )
 
 

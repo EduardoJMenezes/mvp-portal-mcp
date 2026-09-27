@@ -60,6 +60,10 @@ def agendar_aula(
         bool,
         Field(description="Cria a sala no Zoom e mostra a aula à turma. Só depois do ok do professor no chat."),
     ] = False,
+    categoria: Annotated[
+        str | None,
+        Field(description="Categoria livre, a gaveta do menu: ex.: 'Aula', 'Monitoria'"),
+    ] = None,
 ) -> dict:
     """Agenda uma aula ao vivo e, com `publicar`, já abre a sala no Zoom.
 
@@ -90,4 +94,5 @@ def agendar_aula(
         modulo=modulo,
         submodulo=submodulo,
         publicar=publicar,
+        categoria=categoria,
     )

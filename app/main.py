@@ -32,6 +32,7 @@ from app.mcp_server import tools_estrutura as _tools_estrutura  # noqa: F401
 from app.mcp_server import tools_importacao as _tools_importacao  # noqa: F401
 from app.mcp_server import tools_simulado as _tools_simulado  # noqa: F401
 from app.mcp_server import tools_aulas as _tools_aulas  # noqa: F401
+from app.mcp_server import tools_menu as _tools_menu  # noqa: F401
 from app.mcp_server.server import mcp
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
