@@ -15,6 +15,7 @@ import app.mcp_server.tools_importacao  # noqa: F401  isort:skip
 import app.mcp_server.tools_simulado  # noqa: F401  isort:skip
 import app.mcp_server.tools_aulas  # noqa: F401  isort:skip
 import app.mcp_server.tools_menu  # noqa: F401  isort:skip
+import app.mcp_server.tools_agenda  # noqa: F401  isort:skip
 from app.identidade import Papel
 from tests.modelos import TokenMCP, Usuario
 from tests.senhas import hash_senha, hash_token, novo_token_mcp
@@ -25,6 +26,7 @@ ALTERAM_NA_HORA = {
     "remover_do_curso", "cadastrar_assunto", "classificar_videos",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
+    "criar_eventos", "editar_evento", "remover_evento",
 }
 
 
@@ -117,7 +119,7 @@ def test_tools_registradas_e_anotadas():
         "buscar_estatisticas_simulado", "listar_simulados", "detalhar_questao",
         "detalhar_simulado", "buscar_ranking_simulado", "revisar_importacao",
         "importar_simulado_docx", "completar_questao_importada",
-        "importar_prints", "ver_prints", "recortar_figura", "listar_menu", "listar_biblioteca",
+        "importar_prints", "ver_prints", "recortar_figura", "listar_menu", "listar_biblioteca", "listar_agenda",
         # proposta, que nasce em rascunho
         "criar_questao_rascunho", "importar_videos_como_itens", "criar_simulado_rascunho",
         "importar_pasta_vimeo_como_rascunho", "publicar_rascunho",

@@ -136,6 +136,11 @@ Módulos: moram numa biblioteca e as turmas os recebem (atribuir_turmas,
 copiar_modulos); uma aula pode ser só de algumas turmas. Também alteram na
 hora: preview e ok no chat antes.
 
+Agenda: eventos por turma, que levam o aluno ao conteúdo ligado (aula,
+módulo, aula ao vivo ou simulado) e o liberam na hora do evento. Na foto do
+calendário, pergunte sempre as turmas e o dia e a hora de cada uma.
+criar_eventos, editar_evento e remover_evento também alteram na hora.
+
 Menu do aluno: cada turma tem o seu, e cada botão é uma feature (curso, aulas
 ao vivo, simulados, materiais) recortada por uma categoria livre. definir_menu
 e copiar_menu também alteram na hora: preview no chat e ok antes.
