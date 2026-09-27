@@ -1,8 +1,9 @@
-"""Aulas ao vivo pelo chat: agendar e consultar.
+"""Aulas ao vivo pelo chat: agendar, publicar e consultar.
 
-Agendar cria a aula em rascunho, sem sala no Zoom. A sala nasce quando o
-professor publica no portal — por aqui não há como publicar. A conta do Zoom é
-dividida com outra plataforma, e a agenda dela não é lugar para proposta.
+Com o ok do professor no chat, `agendar_aula(publicar=True)` já cria a sala no
+Zoom (decisão 0008 do cofre). A conta do Zoom é dividida com outra plataforma:
+a API recusa publicar pelo chat nos horários dela (terça 17h–19h, quarta
+19h–21h).
 """
 
 from __future__ import annotations
@@ -55,13 +56,23 @@ def agendar_aula(
     submodulo: Annotated[
         str | None, Field(description="Sub-módulo do destino; vazio é 'Aulas'")
     ] = None,
+    publicar: Annotated[
+        bool,
+        Field(description="Cria a sala no Zoom e mostra a aula à turma. Só depois do ok do professor no chat."),
+    ] = False,
 ) -> dict:
-    """Agenda uma aula ao vivo, em RASCUNHO e sem sala no Zoom.
+    """Agenda uma aula ao vivo e, com `publicar`, já abre a sala no Zoom.
 
-    Mostre ao professor título, dia e hora (Brasília), duração, turmas e o
-    destino da gravação antes de chamar. A aula não aparece para aluno nenhum e
-    não ocupa a agenda do Zoom até o professor publicá-la em Admin › Aulas ao
-    vivo — repasse isso a ele. Não há tool para publicar: é de propósito.
+    Antes de chamar, mostre ao professor título, dia e hora (Brasília),
+    duração, turmas e o capítulo (módulo › sub-módulo), e pergunte se pode
+    publicar. Com o ok dele no chat, chame uma vez só com `publicar=True`: a
+    sala nasce no Zoom e a turma já vê a aula no capítulo. Sem `publicar`, a
+    aula fica em RASCUNHO, sem sala, até alguém publicar em Admin › Aulas ao
+    vivo — não chame de novo para publicar, isso criaria outra aula.
+
+    Terça das 17h às 19h e quarta das 19h às 21h (Brasília) a conta do Zoom é
+    da outra plataforma: publicar nesses horários é recusado. Repasse ao
+    professor e proponha outro horário.
 
     Com `modulo`, a gravação, quando o Zoom avisar que ficou pronta, sobe ao
     Vimeo e entra publicada naquele sub-módulo.
@@ -78,4 +89,5 @@ def agendar_aula(
         gravar=gravar,
         modulo=modulo,
         submodulo=submodulo,
+        publicar=publicar,
     )
