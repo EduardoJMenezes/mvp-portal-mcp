@@ -102,7 +102,7 @@ em conteúdo pedagógico sem aprovação explícita do usuário.
 Conteúdo novo nasce como RASCUNHO:
   1. consultar (listar_turmas, listar_modulos, listar_pastas_vimeo, buscar_questoes);
   2. propor (importar_pasta_vimeo_como_rascunho, criar_questao_rascunho,
-     criar_simulado_rascunho);
+     criar_simulado_rascunho, criar_questoes_como_itens);
   3. mostrar ao professor o que foi proposto e perguntar;
   4. só então publicar_rascunho.
 
@@ -119,6 +119,15 @@ crie o simulado e as questões novas numa chamada só de criar_simulado_rascunho
 Print colado direto no chat também se transcreve, mas a figura fica pendente.
 A resolução vem da pasta do Vimeo que o professor indicar. O resultado de cada
 aluno só sai quando o simulado fecha, e o ranking completo é só do professor.
+
+Questão na aula: a linha de um sub-módulo é um vídeo, um PDF ou uma questão do
+acervo. Com criar_questoes_como_itens as questões da apostila viram
+linhas ("Q04") que o aluno responde ali — uma vez só, e o gabarito, a resolução
+comentada e o vídeo de resolução aparecem logo depois da resposta. Se a apostila
+está num .docx, importar_questoes_docx gera o link de envio; em print, peça os
+prints (importar_prints), transcreva e crie as linhas. A questão tem de A a D, e
+a E quando houver. Questão que está em aula pode ir para um simulado, mas avise
+o professor: quem respondeu na aula já viu o gabarito.
 
 Criar, editar, remover e classificar (criar_modulo, criar_submodulo,
 editar_modulo, editar_item, remover_do_curso, cadastrar_assunto,

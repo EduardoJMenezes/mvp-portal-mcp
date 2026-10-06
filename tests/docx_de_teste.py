@@ -43,9 +43,10 @@ def tabela(*linhas: tuple[str, ...]) -> str:
 
 
 def questao(numero: int, enunciado: str, gabarito: str | None, resolucao: list[str],
-            marcador: str = "GABARITO: ", figuras_nas_alternativas: bool = False) -> list[str]:
+            marcador: str = "GABARITO: ", figuras_nas_alternativas: bool = False,
+            letras: str = "abcde") -> list[str]:
     blocos = [p(f"{numero:02d}. {enunciado}")]
-    for letra in "abcde":
+    for letra in letras:
         if figuras_nas_alternativas:
             blocos += [p(f"{letra})"), p(figura())]
         else:

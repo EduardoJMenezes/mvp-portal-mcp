@@ -31,6 +31,8 @@ from app.errors import RegraDeNegocio
 
 
 LETRAS = ("A", "B", "C", "D", "E")
+# O mínimo de uma questão: a E só existe na prova de cinco alternativas.
+OBRIGATORIAS = LETRAS[:4]
 
 
 class ParteDaQuestao:
@@ -524,12 +526,18 @@ class QuestaoLida:
         faltas = []
         if not "".join(self.enunciado).strip():
             faltas.append("enunciado")
-        ausentes = [letra for letra in LETRAS if not "".join(self.alternativas.get(letra, [])).strip()]
+        # De A a D são obrigatórias; a E é da prova que tem cinco. A apostila às vezes para na D.
+        ausentes = [letra for letra in OBRIGATORIAS if letra not in self.presentes]
         if ausentes:
             faltas.append(f"alternativas {', '.join(ausentes)}")
-        if self.gabarito not in LETRAS:
+        if self.gabarito not in self.presentes:
             faltas.append("gabarito")
         return faltas
+
+    @property
+    def presentes(self) -> list[str]:
+        """As letras que o documento trouxe com texto."""
+        return [letra for letra in LETRAS if "".join(self.alternativas.get(letra, [])).strip()]
 
     @property
     def completa(self) -> bool:
@@ -541,7 +549,7 @@ class QuestaoLida:
             "numero": self.numero,
             "enunciado": "\n\n".join(t for t in self.enunciado if t.strip()),
             "alternativas": {letra: "\n\n".join(t for t in self.alternativas[letra] if t.strip())
-                             for letra in LETRAS},
+                             for letra in self.presentes},
             "gabarito": self.gabarito,
             "resolucao_comentada": "\n\n".join(t for t in self.resolucao if t.strip()) or None,
         }
@@ -555,7 +563,7 @@ class Leitura:
 
 
 def separar_questoes(blocos: list[Bloco]) -> Leitura:
-    """As regras: número em sequência, alternativas a)–e), gabarito, e o resto é resolução."""
+    """As regras: número em sequência, alternativas a)–d) ou a)–e), gabarito, e o resto é resolução."""
     titulo = None
     questoes: list[QuestaoLida] = []
     atual: QuestaoLida | None = None
@@ -577,7 +585,7 @@ def separar_questoes(blocos: list[Bloco]) -> Leitura:
         inicio = _INICIO.match(plano)
         if inicio:
             numero = int(inicio.group(1) or inicio.group(2))
-            pronta = atual is not None and (estado == "resolucao" or len(atual.alternativas) == 5)
+            pronta = atual is not None and (estado == "resolucao" or len(atual.alternativas) >= len(OBRIGATORIAS))
             esperado = atual.numero + 1 if atual else None
             if atual is None or (pronta and numero in (esperado, esperado + 1)):
                 if atual is not None and numero == esperado + 1:

@@ -77,6 +77,27 @@ def test_tabela_vira_markdown_e_texto_do_word_nao_vira_marcacao():
     assert documento.blocos[1].texto == "R\\$ 5 e 2\\_3"
 
 
+def test_questao_que_para_na_d_e_completa():
+    """A apostila às vezes tem quatro alternativas; a prova, cinco. As duas fecham."""
+    _, leitura = _ler(
+        *questao(1, "Com quatro", "D", ["A D é a certa."], letras="abcd"),
+        *questao(2, "Com cinco", "E", ["ok"]),
+        *questao(3, "Quatro, sem gabarito na questão", None, [], letras="abcd"),
+        *questao(4, "Depois dela", "A", ["ok"], letras="abcd"),
+    )
+
+    assert [(q.numero, q.completa) for q in leitura.questoes] == [(1, True), (2, True), (3, False), (4, True)]
+    assert list(leitura.questoes[0].como_entrada()["alternativas"]) == ["A", "B", "C", "D"]
+    assert list(leitura.questoes[1].como_entrada()["alternativas"]) == ["A", "B", "C", "D", "E"]
+
+
+def test_gabarito_fora_das_alternativas_nao_fecha_a_questao():
+    _, leitura = _ler(*questao(1, "Quatro alternativas, gabarito E", "E", ["?"], letras="abcd"))
+
+    assert leitura.questoes[0].completa is False
+    assert "falta gabarito" in leitura.questoes[0].avisos[0]
+
+
 def test_questao_sem_gabarito_vira_aviso_e_nao_chute():
     _, leitura = _ler(*questao(1, "Sem gabarito?", None, []), *questao(2, "Com", "A", ["ok"]))
 

@@ -122,6 +122,7 @@ def test_tools_registradas_e_anotadas():
         "importar_prints", "ver_prints", "recortar_figura", "listar_menu", "listar_biblioteca", "listar_agenda",
         # proposta, que nasce em rascunho
         "criar_questao_rascunho", "importar_videos_como_itens", "criar_simulado_rascunho",
+        "criar_questoes_como_itens", "importar_questoes_docx",
         "importar_pasta_vimeo_como_rascunho", "publicar_rascunho",
         # CRUD do curso, que altera direto e confirma com o professor
         *ALTERAM_NA_HORA,
@@ -133,6 +134,7 @@ def test_tools_registradas_e_anotadas():
     assert sem_descricao == []
 
     escritas = {"criar_questao_rascunho", "importar_videos_como_itens",
+                "criar_questoes_como_itens", "importar_questoes_docx",
                 "criar_simulado_rascunho", "publicar_rascunho", "importar_simulado_docx",
                 "completar_questao_importada", "importar_prints", "recortar_figura",
                 "importar_pasta_vimeo_como_rascunho", "agendar_aula", *ALTERAM_NA_HORA}

@@ -107,10 +107,51 @@ def importar_simulado_docx(
     )
 
 
+@mcp.tool(name="importar_questoes_docx", annotations=ESCREVE_RASCUNHO)
+def importar_questoes_docx(
+    modulo: Annotated[str, Field(description="Módulo onde as questões entram, ex.: 'K01'")],
+    submodulo: Annotated[str, Field(description="Sub-módulo, ex.: 'Questões da apostila'")],
+    turma: Annotated[
+        str | None,
+        Field(description="Turma por onde achar o módulo; vazio procura na biblioteca inteira"),
+    ] = None,
+    pasta_resolucao: Annotated[
+        str | None,
+        Field(description="Id da pasta do Vimeo com os vídeos de resolução, se o professor disser"),
+    ] = None,
+) -> dict:
+    """Importa as questões da apostila de um .docx (Word) para uma aula: gera o link de envio.
+
+    É o caminho quando o professor quer as questões de um capítulo dentro do
+    módulo ("sobe as questões do K01") e elas estão num documento do Word no
+    formato da equipe — numeradas, alternativas a) a d) ou e), gabarito e
+    resolução. Para um simulado, é importar_simulado_docx.
+
+    O arquivo não passa pelo chat: devolva o link ao professor (vale 30
+    minutos, uso único). Ele abre, envia o .docx e avisa aqui. O servidor lê o
+    documento e cria, em RASCUNHO, uma linha por questão no sub-módulo, com o
+    número do documento no nome ("Q04"). Quando ele avisar, chame
+    revisar_importacao — ali `simulado_id` vem vazio, porque não há prova.
+
+    O aluno responde cada questão uma vez, na aula, e vê o gabarito e a
+    resolução em seguida. Nada aparece para ele até publicar_rascunho.
+    """
+    return _com_link(
+        comando(
+            "importar_questoes_docx",
+            turma=turma,
+            modulo=modulo,
+            submodulo=submodulo,
+            pasta_resolucao=pasta_resolucao,
+        ),
+        "ele envia o .docx e avisa; depois chame revisar_importacao",
+    )
+
+
 @mcp.tool(name="revisar_importacao", annotations=SOMENTE_LEITURA)
 def revisar_importacao(
-    importacao: Annotated[int, Field(description="Id devolvido por importar_simulado_docx")],
-    de: Annotated[int, Field(ge=1, description="Primeira questão a mostrar (ordem na prova)")] = 1,
+    importacao: Annotated[int, Field(description="Id devolvido por importar_simulado_docx ou importar_questoes_docx")],
+    de: Annotated[int, Field(ge=1, description="Primeira questão a mostrar (ordem na prova ou na aula)")] = 1,
     ate: Annotated[int | None, Field(ge=1, description="Última questão; vazio mostra até 10 depois de `de`")] = None,
 ) -> list:
     """Mostra o que o servidor leu do .docx — com as figuras — para revisar com o professor.
@@ -152,7 +193,7 @@ def completar_questao_importada(
         str | dict[str, str],
         Field(description="Cinco blocos, um por letra ('19-23'), ou uma faixa por letra ({'A': '19', ...})"),
     ],
-    gabarito: Annotated[str, Field(description="Letra correta, A a E")],
+    gabarito: Annotated[str, Field(description="Letra correta, entre as alternativas da questão")],
     resolucao: Annotated[str | None, Field(description="Blocos da resolução, ex.: '25-30'")] = None,
 ) -> dict:
     """Monta, a partir dos blocos do documento, uma questão que as regras não fecharam.

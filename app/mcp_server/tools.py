@@ -419,7 +419,8 @@ def listar_simulados(
 async def criar_questao_rascunho(
     enunciado: Annotated[str, Field(description="Texto da questão, em Markdown com LaTeX")],
     alternativas: Annotated[
-        dict[str, str], Field(description='As cinco alternativas: {"A": "...", "B": "...", ... "E": "..."}')
+        dict[str, str],
+        Field(description='As alternativas, de A a D e a E se houver: {"A": "...", "B": "...", "C": "...", "D": "..."}'),
     ],
     gabarito: Annotated[str, Field(description="Letra correta: A, B, C, D ou E")],
     assunto: Annotated[
@@ -438,13 +439,14 @@ async def criar_questao_rascunho(
         bool, Field(description="true quando há figura que não deu para transcrever")
     ] = False,
 ) -> dict:
-    """Cadastra UMA questão de simulado, avulsa, como RASCUNHO.
+    """Cadastra UMA questão avulsa no acervo, como RASCUNHO.
 
     Para montar uma prova, prefira criar_simulado_rascunho com as questões
-    novas dentro: é um rascunho só, em vez de um por questão.
+    novas dentro; para pôr questões numa aula, criar_questoes_como_itens.
+    Nos dois é um rascunho só, em vez de um por questão.
 
     Sem turma: questão não pertence a turma nenhuma — quem pertence é o
-    simulado onde ela entra.
+    simulado ou a aula onde ela entra. A questão tem de A a D; a E é opcional.
 
     A questão NÃO fica visível para ninguém: nasce em rascunho e só entra no
     acervo depois que o professor aprovar. Apresente o retorno e espere a
@@ -455,6 +457,69 @@ async def criar_questao_rascunho(
         enunciado=enunciado, alternativas=alternativas, gabarito=gabarito, assunto=assunto,
         subassunto=subassunto, dificuldade=dificuldade, imagem_pendente=imagem_pendente,
         resolucao=await _resolucao_do_vimeo(vimeo_id),
+    )
+
+
+@mcp.tool(name="criar_questoes_como_itens", annotations=ESCREVE_RASCUNHO)
+async def criar_questoes_como_itens(
+    modulo: Annotated[str, Field(description="Módulo onde as questões entram, ex.: 'K01'")],
+    submodulo: Annotated[str, Field(description="Sub-módulo, ex.: 'Questões da apostila'")],
+    questoes: Annotated[
+        list[int | dict],
+        Field(
+            description=(
+                "Uma linha por questão, na ordem da aula. Cada uma é o id de uma questão "
+                "publicada (buscar_questoes), {questao_id, nome}, ou a questão nova inteira: "
+                "{enunciado, alternativas: {A..D, e E se houver}, gabarito, resolucao_comentada, "
+                "assunto, subassunto, dificuldade, numero, vimeo_id, nome}. `numero` é o da "
+                "apostila e vira o nome da linha (4 → 'Q04'); `nome` troca esse nome."
+            )
+        ),
+    ],
+    turma: Annotated[
+        str | None,
+        Field(description="Turma por onde achar o módulo; vazio procura na biblioteca inteira"),
+    ] = None,
+    pasta_resolucao: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Id da pasta do Vimeo com os vídeos de resolução (listar_pastas_vimeo). "
+                "Casa pelo número do título: o vídeo Q07 vai para a questão de numero 7."
+            )
+        ),
+    ] = None,
+) -> dict:
+    """Põe questões num sub-módulo, em RASCUNHO: cada uma vira uma linha que o aluno responde na aula.
+
+    É o caminho da apostila: "as questões do K01, com as resoluções". Na aula o
+    aluno marca UMA vez, e o gabarito, a resolução comentada e o vídeo de
+    resolução aparecem logo depois da resposta — diferente do simulado, onde só
+    saem quando a prova fecha. A resposta fica gravada com a alternativa
+    marcada.
+
+    A questão tem de A a D; a E é opcional. Transcreva como em
+    criar_simulado_rascunho — Markdown, fórmula em LaTeX ou índice em Unicode,
+    `![](figura:pendente)` onde houver figura — e proponha assunto e
+    sub-assunto de cada uma (listar_assuntos): é por eles que sai a devolutiva
+    do aluno. Questão com figura pendente não publica.
+
+    Módulo e sub-módulo precisam existir (listar_modulos, criar_modulo,
+    criar_submodulo). Questão do acervo entra pelo id, e precisa estar
+    publicada. A resolução em vídeo é da questão: informe `vimeo_id` em cada
+    uma, ou a pasta do Vimeo que o professor disser.
+
+    Nada aparece para os alunos até publicar_rascunho. Mostre o detalhe
+    devolvido — as linhas, as questões e os gabaritos — e espere o ok do
+    professor.
+    """
+    resolucoes = None
+    if pasta_resolucao:
+        resolucoes = vimeo_importacao.resolucoes_por_numero(await _ler_plano(pasta_resolucao))
+    return await comando_async(
+        "criar_questoes_como_itens",
+        turma=turma, modulo=modulo, submodulo=submodulo,
+        questoes=await _questoes_com_resolucao(questoes), resolucoes=resolucoes,
     )
 
 
@@ -542,7 +607,7 @@ async def criar_simulado_rascunho(
         Field(
             description=(
                 "Na ordem da prova. Cada uma é o id de uma questão publicada (buscar_questoes) "
-                "ou a questão nova inteira: {enunciado, alternativas: {A..E}, gabarito, "
+                "ou a questão nova inteira: {enunciado, alternativas: {A..D, e E se houver}, gabarito, "
                 "resolucao_comentada, assunto, subassunto, dificuldade, numero, vimeo_id}. "
                 "`numero` é o da prova, quando não for a posição (ex.: 91 no ENEM)."
             )
@@ -592,7 +657,9 @@ async def criar_simulado_rascunho(
 
     Nada aparece para os alunos até publicar_rascunho. Mostre o detalhe
     devolvido — questões, gabaritos, resoluções casadas e
-    `pendencias_para_publicar` — e espere o ok do professor.
+    `pendencias_para_publicar` — e espere o ok do professor. `avisos` não
+    impedem publicar, mas conte ao professor: são as questões da prova que
+    também estão numa aula, onde o aluno vê o gabarito assim que responde.
     """
     resolucoes = None
     if pasta_resolucao:

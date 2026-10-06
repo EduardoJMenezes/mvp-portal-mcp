@@ -472,6 +472,9 @@ class Item(Base, Rastreavel):
     id: Mapped[int] = mapped_column(primary_key=True)
     submodulo_id: Mapped[int] = mapped_column(ForeignKey("submodules.id"), nullable=False)
     video_id: Mapped[int] = mapped_column(ForeignKey("videos.id"), nullable=False)
+    # A linha de questão (V10 da API). Está aqui para a limpeza entre os testes apagar as linhas
+    # antes das questões.
+    questao_id: Mapped[int | None] = mapped_column(ForeignKey("questions.id"))
     nome: Mapped[str] = mapped_column(String(300), nullable=False)
     ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=Status.RASCUNHO)

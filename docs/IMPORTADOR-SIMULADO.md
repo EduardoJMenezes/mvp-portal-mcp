@@ -70,7 +70,7 @@ As regras aceitam as variações vistas e as comuns:
 * resolução: tudo entre o gabarito e a próxima questão — inclusive linhas que
   parecem alternativas ("a) Errada…") ou numeradas ("1. Metanol").
 
-Cada questão passa por uma conferência (número, cinco alternativas, gabarito,
+Cada questão passa por uma conferência (número, alternativas de A a D ou até a E, gabarito,
 figuras convertidas). O que não fecha vira **aviso no preview**, nunca chute.
 
 ## Fidelidade do conteúdo
@@ -150,6 +150,18 @@ crescer de verdade.
 O Claude sugere assunto e sub-assunto por questão na revisão. Antes, uma
 proposta de taxonomia de orgânica e físico-química, tirada dos simulados, vai
 para aprovação — sem ela, o "Onde revisar" do aluno sai vazio.
+
+## A apostila: o mesmo .docx, com destino na aula
+
+`importar_questoes_docx` gera o mesmo link de envio, mas no lugar de turmas e
+agenda recebe **módulo e sub-módulo**. O documento é lido pelas mesmas regras,
+e cada questão vira uma **linha do sub-módulo**, em rascunho, com o número do
+documento no nome ("Q04"). Não nasce prova: na revisão `simulado_id` vem vazio
+e `pendencias_para_publicar` lista as linhas sem alternativas ou com figura
+pendente. A questão completada depois (`completar_questao_importada`) entra na
+posição do número dela.
+
+Questão de apostila pode parar na D: de A a D são obrigatórias, a E é opcional.
 
 ## Fora desta etapa
 
