@@ -71,6 +71,15 @@ def listar_assuntos() -> list[dict]:
 # --- estrutura do curso ------------------------------------------------------
 
 
+# Os ícones que o cartão do módulo aceita. Quem valida é a API (IconeDoModulo.java), que devolve a
+# lista inteira quando o nome não existe; aqui ela está para o modelo acertar de primeira.
+_ICONES = (
+    "atomo, frasco, bequer, tubo-de-ensaio, pipeta, microscopio, calculadora, tabela, ligacoes, "
+    "hexagono, cubo, funil, gota, chama, termometro, raio, bateria, balanca, velocimetro, orbita, "
+    "radiacao, dna, folha, reciclagem, camadas, grafico, livro, prancheta, capelo, trofeu, estrela, lampada"
+)
+
+
 @mcp.tool(name="criar_modulo", annotations=ALTERA)
 def criar_modulo(
     turma: Annotated[
@@ -82,6 +91,10 @@ def criar_modulo(
         Field(description="Sub-módulos a criar junto, ex.: ['Aulas', 'Questões da apostila']"),
     ] = None,
     categoria: Annotated[str | None, Field(description="Categoria livre, a gaveta do menu (ex.: 'Extensivo'); vazio tira")] = None,
+    icone: Annotated[
+        str | None,
+        Field(description=f"Ícone do cartão do módulo, um destes: {_ICONES}. Vazio: o portal escolhe pelo nome"),
+    ] = None,
 ) -> dict:
     """Cria um módulo (capítulo) na turma, com os sub-módulos que ele terá.
 
@@ -93,8 +106,12 @@ def criar_modulo(
     o mesmo K01). Sem `submodulos`, nasce com 'Aulas' e 'Questões da apostila'.
     Módulo novo nasce vazio: nada aparece para o aluno até haver item
     publicado dentro.
+
+    `icone` é a capa do cartão que o aluno vê em "Meu curso". Sem ele, o portal
+    escolhe pelo nome do capítulo. Foto no lugar do ícone só pelo portal (Admin ›
+    Aulas): arquivo não passa pelo chat.
     """
-    return comando("criar_modulo", turma=turma, nome=nome, submodulos=submodulos, categoria=categoria)
+    return comando("criar_modulo", turma=turma, nome=nome, submodulos=submodulos, categoria=categoria, icone=icone)
 
 
 @mcp.tool(name="criar_submodulo", annotations=ALTERA)
@@ -122,11 +139,19 @@ def editar_modulo(
     novo_nome: Annotated[str | None, Field(description="Novo nome, se for renomear")] = None,
     nova_ordem: Annotated[int | None, Field(description="Posição na lista da turma")] = None,
     nova_categoria: Annotated[str | None, Field(description="Categoria livre, a gaveta do menu (ex.: 'Extensivo'); vazio tira")] = None,
+    novo_icone: Annotated[
+        str | None,
+        Field(description=f"Ícone do cartão, um destes: {_ICONES} — ou 'automatico', para o portal escolher pelo nome"),
+    ] = None,
 ) -> dict:
-    """Renomeia um módulo, muda a posição dele na turma ou a categoria.
+    """Renomeia um módulo, muda a posição dele na turma, a categoria ou o ícone do cartão.
 
     A categoria é o que um botão do menu usa para mostrar só alguns capítulos
     (ex.: "Extensivo 2027" = CURSO › "Extensivo"). Ver listar_menu.
+
+    O ícone é a capa do cartão do módulo em "Meu curso". Escolher um ícone tira
+    a foto que o professor tenha posto pelo portal — avise antes, se houver
+    (`foto_versao` preenchido em listar_modulos).
 
     **Antes de chamar, mostre ao professor no chat como vai ficar e espere o
     ok dele.** A alteração vale na hora, inclusive para os alunos. Quem mexeu
@@ -139,6 +164,7 @@ def editar_modulo(
         novo_nome=novo_nome,
         nova_ordem=nova_ordem,
         nova_categoria=nova_categoria,
+        novo_icone=novo_icone,
     )
 
 
