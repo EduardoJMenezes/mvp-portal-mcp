@@ -115,7 +115,7 @@ def test_tools_registradas_e_anotadas():
         # consulta
         "listar_turmas", "listar_modulos", "listar_assuntos", "buscar_questoes",
         "listar_videos_vimeo", "listar_pastas_vimeo", "simular_importacao_vimeo",
-        "listar_rascunhos", "detalhar_rascunho", "buscar_desempenho_aluno",
+        "listar_rascunhos", "detalhar_rascunho", "buscar_desempenho_aluno", "buscar_desempenho_por_assunto",
         "buscar_estatisticas_simulado", "listar_simulados", "detalhar_questao",
         "detalhar_simulado", "buscar_ranking_simulado", "revisar_importacao",
         "importar_simulado_docx", "completar_questao_importada",

@@ -381,6 +381,35 @@ def buscar_desempenho_aluno(
     return comando("buscar_desempenho_aluno", aluno=aluno, simulado=simulado)
 
 
+@mcp.tool(name="buscar_desempenho_por_assunto", annotations=SOMENTE_LEITURA)
+def buscar_desempenho_por_assunto(
+    turma: Annotated[str | None, Field(description="Nome ou id da turma, para a turma inteira")] = None,
+    aluno: Annotated[str | None, Field(description="Nome, e-mail ou id do aluno, para um aluno só")] = None,
+) -> dict:
+    """Onde a turma (ou um aluno) acerta e erra, por assunto e sub-assunto.
+
+    Junta TODAS as questões respondidas — nas aulas e nos simulados entregues
+    — e organiza pela classificação da questão. Informe a turma OU o aluno.
+
+    Cada assunto traz `respostas`, `acertos`, `percentual` (o acerto cru) e
+    `ajustado`: a mesma nota puxada para a média geral quando há poucas
+    respostas, para um erro isolado não parecer um ponto fraco. A lista vem do
+    pior `ajustado` para o melhor, e `nivel` é ATENCAO, DESENVOLVENDO ou BEM.
+    Ao comentar, diga sempre quantas respostas há por trás do número.
+
+    Com a turma vem também `questoes_da_aula`: cada questão das aulas com
+    `distribuicao` (quantos marcaram cada letra) e o `gabarito`, das mais
+    erradas para as mais acertadas — é onde se vê qual alternativa enganou
+    mais. `sem_assunto` conta respostas em questões sem classificação, que
+    ficam de fora: sugira classificá-las (editar_questao).
+
+    `respostas: 0` significa que ninguém respondeu ainda; não invente números.
+    """
+    if bool(turma) == bool(aluno):
+        raise ToolError("Informe a turma ou o aluno — um dos dois.")
+    return comando("buscar_desempenho_por_assunto", turma=turma, aluno=aluno)
+
+
 @mcp.tool(name="buscar_estatisticas_simulado", annotations=SOMENTE_LEITURA)
 def buscar_estatisticas_simulado(
     simulado: Annotated[str, Field(description="Título ou id do simulado")],
@@ -438,6 +467,7 @@ async def criar_questao_rascunho(
     imagem_pendente: Annotated[
         bool, Field(description="true quando há figura que não deu para transcrever")
     ] = False,
+    comentarios: Annotated[dict[str, str] | None, Field(description='Comentário de cada alternativa, por letra: por que o aluno costuma marcá-la e onde está o erro (na correta, por que é ela). Uma ou duas frases; o aluno lê o da que marcou. Ex.: {"B": "18 g é a massa de 1 mol: faltou multiplicar por 2."}')] = None,
 ) -> dict:
     """Cadastra UMA questão avulsa no acervo, como RASCUNHO.
 
@@ -448,6 +478,10 @@ async def criar_questao_rascunho(
     Sem turma: questão não pertence a turma nenhuma — quem pertence é o
     simulado ou a aula onde ela entra. A questão tem de A a D; a E é opcional.
 
+    Proponha `comentarios` para as alternativas erradas: é o que o aluno lê
+    quando erra, e o que faz a correção ensinar. O professor revisa o texto no
+    rascunho antes de aprovar.
+
     A questão NÃO fica visível para ninguém: nasce em rascunho e só entra no
     acervo depois que o professor aprovar. Apresente o retorno e espere a
     decisão dele antes de chamar publicar_rascunho.
@@ -456,7 +490,7 @@ async def criar_questao_rascunho(
         "criar_questao_rascunho",
         enunciado=enunciado, alternativas=alternativas, gabarito=gabarito, assunto=assunto,
         subassunto=subassunto, dificuldade=dificuldade, imagem_pendente=imagem_pendente,
-        resolucao=await _resolucao_do_vimeo(vimeo_id),
+        resolucao=await _resolucao_do_vimeo(vimeo_id), comentarios=comentarios,
     )
 
 
@@ -471,6 +505,7 @@ async def criar_questoes_como_itens(
                 "Uma linha por questão, na ordem da aula. Cada uma é o id de uma questão "
                 "publicada (buscar_questoes), {questao_id, nome}, ou a questão nova inteira: "
                 "{enunciado, alternativas: {A..D, e E se houver}, gabarito, resolucao_comentada, "
+                "comentarios: {letra: por que o aluno marca aquela e onde erra}, "
                 "assunto, subassunto, dificuldade, numero, vimeo_id, nome}. `numero` é o da "
                 "apostila e vira o nome da linha (4 → 'Q04'); `nome` troca esse nome."
             )

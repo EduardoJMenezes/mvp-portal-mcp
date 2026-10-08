@@ -102,8 +102,17 @@ async def editar_questao(
     resolucao_comentada: Annotated[
         str | None, Field(description="Resolução escrita (Markdown e LaTeX); '' tira")
     ] = None,
+    comentarios: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "Comentário por alternativa, só as letras que mudam: por que o aluno marca "
+                "aquela e onde está o erro. '' tira o comentário. Ex.: {'B': '...'}"
+            )
+        ),
+    ] = None,
 ) -> dict:
-    """Corrige uma questão: texto, alternativas, gabarito, classificação ou resolução.
+    """Corrige uma questão: texto, alternativas, gabarito, classificação, resolução ou comentários.
 
     **Antes de chamar, mostre ao professor no chat como vai ficar — use
     detalhar_questao para o antes — e espere o ok dele.** Vale na hora,
@@ -111,14 +120,15 @@ async def editar_questao(
 
     Depois que abre uma prova com esta questão, enunciado, alternativas,
     gabarito e figuras travam: a tool recusa e diz em qual simulado.
-    Classificação, dificuldade e as resoluções continuam editáveis.
+    Classificação, dificuldade, as resoluções e os comentários das alternativas
+    continuam editáveis: o aluno só lê o comentário depois de responder.
 
     A figura não passa por aqui: o arquivo não cabe numa chamada de tool. Ponha
     `![](figura:pendente)` onde ela vai; ela entra por recortar_figura, se a
     questão veio de print pelo link, ou o professor anexa pela plataforma.
     """
     mudancas = (enunciado, alternativas, gabarito, dificuldade, imagem_pendente, assunto,
-                subassunto, vimeo_id, resolucao_comentada)
+                subassunto, vimeo_id, resolucao_comentada, comentarios)
     if all(v is None for v in mudancas):
         raise ToolError("Diga o que mudar na questão.")
     return await comando_async(
@@ -126,7 +136,7 @@ async def editar_questao(
         questao=questao, enunciado=enunciado, alternativas=alternativas, gabarito=gabarito,
         dificuldade=dificuldade, imagem_pendente=imagem_pendente, assunto=assunto,
         subassunto=subassunto, resolucao=await _resolucao_pedida(vimeo_id),
-        resolucao_comentada=resolucao_comentada,
+        resolucao_comentada=resolucao_comentada, comentarios=comentarios,
     )
 
 
