@@ -97,6 +97,9 @@ def api_java():
              "SPRING_DATASOURCE_PASSWORD": engine.url.password or "",
              "SPRING_FLYWAY_BASELINE_ON_MIGRATE": "false",
              "PORTAL_MCP_BASE_URL": get_settings().mcp_base_url or "",
+             # O teste fala http com a API: sem o cookie Secure, ela aceita subir com o
+             # segredo de sessão de desenvolvimento (com ele ligado, exige JWT_SECRET próprio).
+             "SESSAO_COOKIE_SEGURO": "false",
              "SERVER_PORT": porta},
         stdout=registro, stderr=subprocess.STDOUT,
     )

@@ -12,13 +12,17 @@ rotas caem no app que vai para o ar.
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
-from fastmcp.server.auth import MultiAuth
+from fastmcp.server.auth import AccessToken, MultiAuth
+from fastmcp.server.auth.providers.github import GitHubProvider
 from starlette.routing import Mount
 
 from app import main
-from app.config import get_settings
+from app.config import Settings, get_settings
+from app.mcp_server import auth as auth_do_mcp
 from app.mcp_server.auth import (
     ESCOPOS_EXIGIDOS,
     GitHubDaPlataforma,
@@ -32,6 +36,8 @@ from tests.modelos import TokenMCP, Usuario
 from tests.senhas import hash_senha, hash_token, novo_token_mcp
 
 BASE = "https://exemplo.up.railway.app"
+# O id numérico da conta do GitHub do operador: é ele, e só ele, a chave do mapa.
+ID_NO_GITHUB = "12345678"
 
 
 @pytest.fixture
@@ -40,7 +46,7 @@ def com_oauth(monkeypatch):
     monkeypatch.setenv("MCP_BASE_URL", BASE)
     monkeypatch.setenv("MCP_OAUTH_GITHUB_CLIENT_ID", "Ov23liDEMONSTRACAO")
     monkeypatch.setenv("MCP_OAUTH_GITHUB_CLIENT_SECRET", "segredo-de-teste")
-    monkeypatch.setenv("MCP_OAUTH_OPERADORES", "EduardoJMenezes=professor@escola.demo")
+    monkeypatch.setenv("MCP_OAUTH_OPERADORES", f"{ID_NO_GITHUB}=professor@escola.demo")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
@@ -123,35 +129,96 @@ def _operador(db, email: str, papel: str = Papel.ADMIN) -> Usuario:
     return usuario
 
 
-def test_login_mapeado_vira_o_operador_da_plataforma(db, com_oauth, api_java) -> None:
+def test_id_mapeado_vira_o_operador_da_plataforma(db, com_oauth, api_java) -> None:
     _operador(db, "professor@escola.demo")
 
-    claims = _operador_do_github(["eduardojmenezes"])
+    claims = _operador_do_github(ID_NO_GITHUB)
 
     assert claims is not None
     assert claims["email"] == "professor@escola.demo"
     assert claims["papel"] == Papel.ADMIN
 
 
-def test_email_publico_do_github_vale_quando_bate_com_um_operador(db, com_oauth, api_java) -> None:
-    _operador(db, "helena@escola.demo")
-
-    assert _operador_do_github(["helena@escola.demo"])["email"] == "helena@escola.demo"
-
-
-def test_login_desconhecido_nao_abre_sessao(db, com_oauth, api_java) -> None:
+def test_id_desconhecido_nao_abre_sessao(db, com_oauth, api_java) -> None:
     _operador(db, "professor@escola.demo")
 
-    assert _operador_do_github(["estranho", "estranho@exemplo.com"]) is None
+    assert _operador_do_github("99999999") is None
 
 
 def test_aluno_nao_entra_pelo_github_nem_estando_no_mapa(db, com_oauth, api_java, monkeypatch) -> None:
     """O GitHub diz quem é; o papel na plataforma diz se opera (seção 4)."""
     _operador(db, "joao@aluno.demo", papel=Papel.ALUNO)
-    monkeypatch.setenv("MCP_OAUTH_OPERADORES", "joaogithub=joao@aluno.demo")
+    monkeypatch.setenv("MCP_OAUTH_OPERADORES", "777=joao@aluno.demo")
     get_settings.cache_clear()
 
-    assert _operador_do_github(["joaogithub"]) is None
+    assert _operador_do_github("777") is None
+
+
+# --- a conta do GitHub é o id, não o que o perfil exibe -----------------------
+#
+# Login e e-mail do perfil são do dono da conta: ele troca os dois quando quer.
+# Estes testes não precisam da API: o GitHub e a tabela de operadores são de
+# mentira, e o que se confere é qual identificador decide.
+
+
+def _sessao_do_github(monkeypatch, claims: dict) -> tuple[AccessToken | None, list]:
+    """Passa por `GitHubDaPlataforma.verify_token` com o GitHub devolvendo `claims`."""
+    consultas: list = []
+
+    async def github_de_mentira(self, token: str) -> AccessToken:
+        return AccessToken(token=token, client_id=str(claims.get("sub")), scopes=["read:user"], claims=claims)
+
+    def api_de_mentira(rota: str, **corpo):
+        consultas.append((rota, corpo))
+        if corpo.get("identificadores") == ["professor@escola.demo"]:
+            return {"usuario_id": 1, "nome": "Helena", "email": "professor@escola.demo", "papel": Papel.ADMIN}
+        return None
+
+    monkeypatch.setattr(GitHubProvider, "verify_token", github_de_mentira)
+    monkeypatch.setattr(auth_do_mcp, "_interno", api_de_mentira)
+    provedor = object.__new__(GitHubDaPlataforma)  # sem __init__: só o verify_token interessa
+    return asyncio.run(provedor.verify_token("token-do-github")), consultas
+
+
+def test_o_id_da_conta_abre_a_sessao_do_operador(com_oauth, monkeypatch) -> None:
+    acesso, consultas = _sessao_do_github(
+        monkeypatch, {"sub": ID_NO_GITHUB, "login": "mudou-de-nome", "email": None}
+    )
+
+    assert acesso is not None
+    assert acesso.claims["email"] == "professor@escola.demo"
+    assert acesso.claims["papel"] == Papel.ADMIN
+    assert consultas == [("operador", {"identificadores": ["professor@escola.demo"]})]
+
+
+def test_o_mesmo_login_em_outra_conta_nao_entra(com_oauth, monkeypatch) -> None:
+    """O login do operador, liberado e registrado por outra pessoa, é outro id."""
+    acesso, consultas = _sessao_do_github(
+        monkeypatch, {"sub": "55555555", "login": "EduardoJMenezes", "email": None}
+    )
+
+    assert acesso is None
+    assert consultas == [], "sem id no mapa, nem se pergunta à API"
+
+
+def test_email_publico_igual_ao_do_operador_nao_abre_sessao(com_oauth, monkeypatch) -> None:
+    """Antes bastava o perfil do GitHub exibir o e-mail de um operador."""
+    acesso, consultas = _sessao_do_github(
+        monkeypatch, {"sub": "333", "login": "estranho", "email": "professor@escola.demo"}
+    )
+
+    assert acesso is None
+    assert consultas == []
+
+
+def test_entrada_por_login_ou_email_fica_fora_do_mapa() -> None:
+    settings = Settings(
+        _env_file=None,
+        mcp_oauth_operadores="EduardoJMenezes=a@escola.demo, x@git.hub=b@escola.demo, 123=C@Escola.Demo",
+    )
+
+    assert settings.mapa_operadores_oauth == {"123": "c@escola.demo"}
+    assert settings.operadores_oauth_ignorados == ["EduardoJMenezes", "x@git.hub"]
 
 
 def test_o_token_opaco_satisfaz_o_escopo_que_o_servidor_exige(com_oauth) -> None:

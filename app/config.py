@@ -36,8 +36,10 @@ class Settings(BaseSettings):
     mcp_oauth_github_client_id: str | None = None
     mcp_oauth_github_client_secret: str | None = None
 
-    # Quem do GitHub corresponde a qual operador da plataforma:
-    # "EduardoJMenezes=professor@escola.demo, outro@git.hub=chefe@escola.demo".
+    # Qual conta do GitHub corresponde a qual operador da plataforma, pelo id
+    # numérico da conta: "12345678=professor@escola.demo, 87654321=chefe@escola.demo".
+    # O id não muda; login e e-mail do perfil o dono da conta troca quando quer,
+    # e por isso não servem de chave (ver docs/MCP-OAUTH.md).
     mcp_oauth_operadores: str = ""
 
     # Só para o proxy OAuth guardar cliente e token entre um deploy e outro:
@@ -77,15 +79,28 @@ class Settings(BaseSettings):
             and self.mcp_oauth_github_client_secret
         )
 
-    @property
-    def mapa_operadores_oauth(self) -> dict[str, str]:
-        """Identificador do GitHub (login ou e-mail) -> e-mail na plataforma."""
-        mapa: dict[str, str] = {}
+    def _pares_de_operadores(self) -> list[tuple[str, str]]:
+        pares = []
         for par in self.mcp_oauth_operadores.split(","):
             chave, _, valor = par.partition("=")
             if chave.strip() and valor.strip():
-                mapa[chave.strip().lower()] = valor.strip().lower()
-        return mapa
+                pares.append((chave.strip(), valor.strip().lower()))
+        return pares
+
+    @property
+    def mapa_operadores_oauth(self) -> dict[str, str]:
+        """Id numérico da conta do GitHub -> e-mail do operador na plataforma.
+
+        Só o id entra: é o único identificador que o GitHub não deixa trocar nem
+        reaproveitar. Entrada com login ou e-mail na chave fica de fora — ver
+        `operadores_oauth_ignorados`.
+        """
+        return {chave: valor for chave, valor in self._pares_de_operadores() if chave.isdigit()}
+
+    @property
+    def operadores_oauth_ignorados(self) -> list[str]:
+        """As chaves de `MCP_OAUTH_OPERADORES` que não são id (formato antigo)."""
+        return [chave for chave, _ in self._pares_de_operadores() if not chave.isdigit()]
 
 
 @lru_cache

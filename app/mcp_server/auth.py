@@ -85,24 +85,24 @@ class TokenDaPlataforma(TokenVerifier):
 # --- porta 2: login no GitHub ------------------------------------------------
 
 
-def _operador_do_github(identificadores: list[str]) -> dict | None:
-    """Traduz quem logou no GitHub no operador cadastrado na plataforma.
+def _operador_do_github(github_id: str) -> dict | None:
+    """Traduz a conta do GitHub que logou no operador cadastrado na plataforma.
 
-    Monta os candidatos nesta ordem: o que o mapa `MCP_OAUTH_OPERADORES` disser
-    para o login ou para o e-mail, e depois o próprio e-mail do GitHub. O
-    e-mail costuma vir vazio (a API do GitHub só devolve o público), então na
-    prática quem resolve é o mapa, pelo login.
+    A chave é o **id numérico** da conta, e só ele. Login e e-mail do perfil são
+    do dono da conta: ele troca os dois quando quer, um login liberado pode ser
+    registrado por outra pessoa, e o e-mail público é só o que o perfil exibe.
+    Ligar um operador a qualquer um deles seria entregar a sessão a quem
+    escrevesse o valor certo no próprio perfil. Sem entrada no mapa para o id,
+    não há sessão — não existe atalho pelo e-mail.
 
-    Quem escolhe entre os candidatos é a API, que tem a tabela: ela devolve o
-    primeiro que for operador de verdade.
+    Quem confirma que o e-mail mapeado é de um operador é a API, que tem a
+    tabela e relê o papel.
     """
-    mapa = get_settings().mapa_operadores_oauth
-    candidatos = [mapa[i] for i in identificadores if i in mapa]
-    candidatos += [i for i in identificadores if "@" in i]
-    if not candidatos:
+    email = get_settings().mapa_operadores_oauth.get(github_id)
+    if not email:
         return None
 
-    return _interno("operador", identificadores=candidatos)
+    return _interno("operador", identificadores=[email])
 
 
 class GitHubDaPlataforma(GitHubProvider):
@@ -120,14 +120,19 @@ class GitHubDaPlataforma(GitHubProvider):
             return None
 
         claims = acesso.claims or {}
-        identificadores = [
-            str(claims[campo]).lower() for campo in ("login", "email") if claims.get(campo)
-        ]
-        operador = await anyio.to_thread.run_sync(_operador_do_github, identificadores)
+        github_id = str(claims.get("sub") or "").strip()
+        operador = (
+            await anyio.to_thread.run_sync(_operador_do_github, github_id)
+            if github_id.isdigit()
+            else None
+        )
         if operador is None:
+            # O id vai no log de propósito: é ele que entra em MCP_OAUTH_OPERADORES
+            # para liberar a conta (`<id>=<e-mail do operador>`).
             logger.warning(
-                "login do GitHub %s não corresponde a nenhum operador; sessão recusada",
-                identificadores or ["(sem identificador)"],
+                "conta do GitHub %s (id %s) não corresponde a nenhum operador; sessão recusada",
+                claims.get("login") or "(sem login)",
+                github_id or "(sem id)",
             )
             return None
 
@@ -177,6 +182,13 @@ def construir_auth() -> AuthProvider:
         client_storage=_armazenamento_oauth(),
     )
     logger.info("MCP com OAuth do GitHub em %s", settings.mcp_base_url)
+    if settings.operadores_oauth_ignorados:
+        logger.warning(
+            "MCP_OAUTH_OPERADORES: %d entrada(s) ignorada(s) (%s). A chave agora é o id "
+            "numérico da conta do GitHub, não o login nem o e-mail — ver docs/MCP-OAUTH.md",
+            len(settings.operadores_oauth_ignorados),
+            ", ".join(settings.operadores_oauth_ignorados),
+        )
 
     # O OAuth responde pelas rotas e pela metadata; o token opaco continua
     # valendo como segunda credencial, para o Claude Code e os scripts.

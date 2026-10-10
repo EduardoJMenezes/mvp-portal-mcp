@@ -45,7 +45,7 @@ No Railway (ou no `.env`, em desenvolvimento):
 MCP_BASE_URL=https://SEU-APP.up.railway.app      # a raiz, sem /mcp
 MCP_OAUTH_GITHUB_CLIENT_ID=Ov23li...
 MCP_OAUTH_GITHUB_CLIENT_SECRET=...
-MCP_OAUTH_OPERADORES=SeuLoginNoGitHub=professor@escola.demo
+MCP_OAUTH_OPERADORES=12345678=professor@escola.demo   # id numérico da conta do GitHub
 ```
 
 `MCP_BASE_URL` é a **raiz**, não o endpoint do MCP: é dela que saem
@@ -63,12 +63,21 @@ O GitHub diz quem entrou; quem decide se essa pessoa opera é o cadastro daqui.
 `MCP_OAUTH_OPERADORES` liga um ao outro:
 
 ```
-MCP_OAUTH_OPERADORES=EduardoJMenezes=professor@escola.demo, outra=chefe@escola.demo
+MCP_OAUTH_OPERADORES=12345678=professor@escola.demo, 87654321=chefe@escola.demo
 ```
 
-Sem entrada no mapa, vale o e-mail **público** do perfil do GitHub, se existir
-como ADMIN ou GERENCIADOR. Como a maioria das contas não publica e-mail, na
-prática quem resolve é o mapa, pelo login.
+A chave é o **id numérico** da conta do GitHub, não o login nem o e-mail. O id
+nunca muda; o login e o e-mail do perfil o dono da conta troca quando quer, e um
+login liberado por renomeação pode ser registrado por outra pessoa — quem
+escrevesse o valor certo no próprio perfil entraria como o operador. Pelo mesmo
+motivo não existe atalho pelo e-mail público do perfil: sem entrada no mapa para
+o id, não há sessão.
+
+Para achar o id de uma conta, abra `https://api.github.com/users/<login>` e leia
+o campo `id`. Quando alguém tenta entrar e é recusado, o log do servidor também
+traz o id (`conta do GitHub <login> (id <id>) não corresponde a nenhum
+operador`). Entrada no formato antigo (`login=e-mail`) é ignorada, e a partida
+do servidor avisa quais foram.
 
 Quem não casar com nenhum operador não abre sessão: recebe 401, não um catálogo
 de ferramentas que não poderia usar. Aluno mapeado também não entra — o papel
@@ -129,7 +138,7 @@ morre a cada deploy: o conector cairia toda vez que subisse uma versão.
 |---|---|
 | `redirect_uri_mismatch` no GitHub | callback do app OAuth diferente de `<base>/auth/callback` |
 | `.well-known` devolve HTML | portal estático montado antes das rotas de OAuth |
-| conecta e toda tool dá 401 | login do GitHub fora de `MCP_OAUTH_OPERADORES`, ou mapeado para alguém que não é ADMIN/GERENCIADOR |
+| conecta e toda tool dá 401 | id da conta do GitHub fora de `MCP_OAUTH_OPERADORES` (o mapa é por id numérico, não por login), ou mapeado para alguém que não é ADMIN/GERENCIADOR |
 | conector cai depois de um deploy | `DATABASE_URL` sem Postgres — o armazenamento voltou a ser o disco efêmero |
 | `POST /register` responde 500 | o armazenamento não conectou no Postgres; o log traz `StoreSetupError` com o motivo |
 | o Claude Code parou de entrar | o token opaco continua valendo; confira se o header não se perdeu na configuração do cliente |
