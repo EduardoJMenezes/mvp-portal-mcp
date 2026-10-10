@@ -118,10 +118,14 @@ async def editar_questao(
     detalhar_questao para o antes — e espere o ok dele.** Vale na hora,
     inclusive nos simulados publicados que ainda não abriram.
 
-    Depois que abre uma prova com esta questão, enunciado, alternativas,
-    gabarito e figuras travam: a tool recusa e diz em qual simulado.
-    Classificação, dificuldade, as resoluções e os comentários das alternativas
-    continuam editáveis: o aluno só lê o comentário depois de responder.
+    Questão publicada se corrige mesmo com prova aberta ou encerrada, e o
+    aluno não é avisado. Quem está fazendo a prova recebe a versão nova ao
+    trocar de questão. Se o gabarito mudar, o acerto de quem já respondeu é
+    refeito, no simulado e na aula — diga isso ao professor antes de aplicar,
+    porque nota e posição mudam. Alternativa com texto vazio é alternativa
+    removida (ficam pelo menos duas, e o gabarito entre elas): as outras não
+    mudam de letra, e quem tinha marcado a removida fica sem resposta nela.
+    Cada correção fica no histórico da questão, que detalhar_questao mostra.
 
     A figura não passa por aqui: o arquivo não cabe numa chamada de tool. Ponha
     `![](figura:pendente)` onde ela vai; ela entra por recortar_figura, se a
