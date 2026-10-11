@@ -482,16 +482,19 @@ async def criar_questao_rascunho(
     quando erra, e o que faz a correção ensinar. O professor revisa o texto no
     rascunho antes de aprovar.
 
-    A questão NÃO fica visível para ninguém: nasce em rascunho e só entra no
-    acervo depois que o professor aprovar. Apresente o retorno e espere a
-    decisão dele antes de chamar publicar_rascunho.
+    A questão NÃO fica visível para ninguém: nasce em rascunho, e quem a
+    publica é o professor, no Banco de questões do portal, onde ela aparece em
+    cima da lista. O retorno traz `conferir_em`, o link dela lá: passe o link
+    ao professor (o de cada questão, se foram várias) para ele conferir e
+    publicar. Não chame publicar_rascunho para questão avulsa.
     """
-    return await comando_async(
+    criado = await comando_async(
         "criar_questao_rascunho",
         enunciado=enunciado, alternativas=alternativas, gabarito=gabarito, assunto=assunto,
         subassunto=subassunto, dificuldade=dificuldade, imagem_pendente=imagem_pendente,
         resolucao=await _resolucao_do_vimeo(vimeo_id), comentarios=comentarios,
     )
+    return _com_onde_conferir(criado)
 
 
 @mcp.tool(name="criar_questoes_como_itens", annotations=ESCREVE_RASCUNHO)
@@ -777,6 +780,29 @@ def _cliente_pergunta_ao_professor(ctx: Context) -> bool:
     cliente = getattr(getattr(sessao.client_params, "client_info", None), "name", None)
     logger.info("cliente %s não mostra formulário; a aprovação vai para o portal", cliente)
     return False
+
+
+def _onde_conferir(questao_id: int) -> str:
+    """A questão no Banco de questões do portal: é lá que o professor a confere e publica."""
+    base = (get_settings().portal_url or "").rstrip("/")
+    return f"{base}/admin/questoes/editar/?id={questao_id}" if base else f"Banco de questões › #{questao_id}"
+
+
+def _com_onde_conferir(criado: dict) -> dict:
+    """Junta ao retorno de criar_questao_rascunho o link da questão para o professor."""
+    questoes = criado.get("questoes") or []
+    if not questoes:
+        return criado
+    questao_id = questoes[0]["questao_id"]
+    return {
+        **criado,
+        "questao_id": questao_id,
+        "conferir_em": _onde_conferir(questao_id),
+        "instrucao": (
+            "Passe o link ao professor: a questão está em rascunho no Banco de questões, "
+            "e é lá que ele confere e publica."
+        ),
+    }
 
 
 def _onde_aprovar(rascunho_id: int) -> str:

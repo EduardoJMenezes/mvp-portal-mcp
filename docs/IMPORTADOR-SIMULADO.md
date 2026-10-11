@@ -103,7 +103,12 @@ imagem original, e a figura sai recortada de dentro dela.
    erro dele, em pixels da vista, encolhe no original.
 3. O Claude transcreve e cria as questões com `![](figura:pendente)` no lugar
    de cada figura. Print quase nunca traz gabarito: quem diz é o professor; o
-   Claude só resolve se ele pedir, e como proposta.
+   Claude só resolve se ele pedir, e como proposta. Desde 11/10/2026 o padrão
+   é uma `criar_questao_rascunho` por questão: elas ficam em rascunho no Banco
+   de questões do portal, em cima da lista, e a tool devolve o link de cada
+   uma (`conferir_em`) para o professor conferir e publicar lá, sem passar
+   pela tela de Rascunhos. Simulado (`criar_simulado_rascunho`) só quando o
+   professor diz que os prints são de uma prova que ele quer montar.
 4. `recortar_figura` recebe `[x0, y0, x1, y1]` e recorta do **original**, não
    da vista. Antes, estende cada borda enquanto ela corta traço, até uma faixa
    em branco — com o traço engordado em 1 px, para atravessar o vão entre a

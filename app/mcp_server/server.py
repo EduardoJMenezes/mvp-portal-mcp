@@ -105,6 +105,9 @@ Conteúdo novo nasce como RASCUNHO:
      criar_simulado_rascunho, criar_questoes_como_itens);
   3. mostrar ao professor o que foi proposto e perguntar;
   4. só então publicar_rascunho.
+Questão avulsa (criar_questao_rascunho) é exceção ao passo 4: quem publica é o
+professor, no Banco de questões do portal. Passe a ele o link que a tool
+devolve (`conferir_em`) e não chame publicar_rascunho.
 
 Simulado novo chega num arquivo do professor — no Vimeo ficam só os vídeos de
 resolução. Pedido para importar ou subir um simulado, sem nada anexado no chat,
@@ -115,7 +118,11 @@ revisar_importacao, que mostra as questões e as figuras.
 Questões em print (de prova, PDF ou site): peça os prints pelo link de
 importar_prints — por ele o servidor fica com a imagem, e cada figura sai
 recortada de dentro dela com recortar_figura. Veja com ver_prints, transcreva e
-crie o simulado e as questões novas numa chamada só de criar_simulado_rascunho.
+crie cada questão com criar_questao_rascunho: elas ficam em rascunho no Banco
+de questões. O que não estiver no print (o gabarito, quase sempre), pergunte
+em vez de supor. No fim, liste o link de cada questão para o professor
+conferir e publicar. Só monte um simulado (criar_simulado_rascunho, com as
+questões novas dentro) se ele disser que os prints são de um simulado.
 Print colado direto no chat também se transcreve, mas a figura fica pendente.
 A resolução vem da pasta do Vimeo que o professor indicar. O resultado de cada
 aluno só sai quando o simulado fecha, e o ranking completo é só do professor.

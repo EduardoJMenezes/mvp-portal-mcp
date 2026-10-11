@@ -252,10 +252,17 @@ def ver_prints(
       (CO₃²⁻), fórmula em LaTeX — e ponha `![](figura:pendente)` no lugar exato
       de cada figura; estrutura, gráfico e tabela desenhada não se descrevem
       em texto;
-    * print quase nunca traz o gabarito: pergunte ao professor. Se ele pedir
-      que você resolva, mostre as respostas como proposta e espere o ok;
-    * crie as questões (criar_simulado_rascunho, ou editar_simulado numa prova
-      que já existe) e chame recortar_figura para cada marca.
+    * o que não estiver no print, pergunte ao professor em vez de supor: o
+      gabarito quase nunca vem, e às vezes falta um trecho cortado. Se ele
+      pedir que você resolva, mostre as respostas como proposta e espere o ok;
+    * crie as questões com criar_questao_rascunho, uma chamada por questão: é
+      o padrão, e elas ficam em rascunho no Banco de questões. Só use
+      criar_simulado_rascunho (ou editar_simulado, numa prova que já existe)
+      se o professor disse que os prints são de um simulado que ele quer
+      montar;
+    * chame recortar_figura para cada marca;
+    * no fim, liste para o professor o link de cada questão (`conferir_em`):
+      ele abre, confere e publica no Banco de questões.
     """
     dados, vistas = _traduzindo(imagens.ver_prints, importacao, de, ate)
     saida: list = [json.dumps(dados, ensure_ascii=False)]
