@@ -693,21 +693,22 @@ async def criar_simulado_rascunho(
     tempo de prova conta de quando cada aluno começa; pode ficar para
     editar_simulado, mas sem ela o simulado não publica.
 
-    Nada aparece para os alunos até publicar_rascunho. Mostre o detalhe
+    Nada aparece para os alunos até a publicação. Mostre o detalhe
     devolvido — questões, gabaritos, resoluções casadas e
-    `pendencias_para_publicar` — e espere o ok do professor. `avisos` não
+    `pendencias_para_publicar` — e passe ao professor o link `conferir_em`: é a
+    página do simulado no portal, onde ele confere e publica. `avisos` não
     impedem publicar, mas conte ao professor: são as questões da prova que
     também estão numa aula, onde o aluno vê o gabarito assim que responde.
     """
     resolucoes = None
     if pasta_resolucao:
         resolucoes = vimeo_importacao.resolucoes_por_numero(await _ler_plano(pasta_resolucao))
-    return await comando_async(
+    return _com_onde_conferir_simulado(await comando_async(
         "criar_simulado_rascunho",
         turmas=turmas, titulo=titulo, questoes=await _questoes_com_resolucao(questoes),
         abre_em=abre_em, fecha_em=fecha_em, duracao_minutos=duracao_minutos,
         resolucoes=resolucoes,
-    )
+    ))
 
 
 # --- publicação: exige aprovação humana --------------------------------------
@@ -805,37 +806,75 @@ def _com_onde_conferir(criado: dict) -> dict:
     }
 
 
-def _onde_aprovar(rascunho_id: int) -> str:
+def _onde_conferir_simulado(simulado_id: int) -> str:
+    """A página do simulado no portal: é lá que o professor o confere e publica."""
     base = (get_settings().portal_url or "").rstrip("/")
-    return f"{base}/admin/rascunhos/revisar/?id={rascunho_id}" if base else "Admin › Rascunhos"
+    return f"{base}/admin/simulados/ver/?id={simulado_id}" if base else f"Simulados › #{simulado_id}"
 
 
-def _aprovar_no_portal(rascunho_id: int) -> dict:
-    onde = _onde_aprovar(rascunho_id)
+def _com_onde_conferir_simulado(criado: dict) -> dict:
+    """Junta ao retorno de criar_simulado_rascunho o link da página do simulado."""
+    simulado = criado.get("simulado") or {}
+    if not simulado.get("simulado_id"):
+        return criado
+    return {**criado, "conferir_em": _onde_conferir_simulado(simulado["simulado_id"])}
+
+
+def _onde_aprovar(rascunho_id: int, detalhe: dict | None = None) -> tuple[str, str]:
+    """Onde, no portal, o professor aprova este rascunho, e o que ele clica lá.
+
+    Cada coisa é aprovada onde mora: o simulado na página dele, a questão avulsa
+    no Banco de questões. O resto (vídeos e linhas de aula) ainda é na tela de
+    Rascunhos. Sem o `detalhe` do rascunho, vale a tela de Rascunhos, que
+    aprova qualquer um.
+    """
+    detalhe = detalhe or {}
+    simulado = detalhe.get("simulado") or {}
+    if simulado.get("simulado_id"):
+        return _onde_conferir_simulado(simulado["simulado_id"]), "botão 'Publicar simulado'"
+    questoes = detalhe.get("questoes") or []
+    if len(questoes) == 1 and not detalhe.get("itens"):
+        return _onde_conferir(questoes[0]["questao_id"]), "botão 'Publicar'"
+    base = (get_settings().portal_url or "").rstrip("/")
+    onde = f"{base}/admin/rascunhos/revisar/?id={rascunho_id}" if base else "Admin › Rascunhos"
+    return onde, f"rascunho #{rascunho_id}, botão 'Aprovar e publicar'"
+
+
+def _aprovar_no_portal(rascunho_id: int, detalhe: dict | None = None) -> dict:
+    onde, como = _onde_aprovar(rascunho_id, detalhe)
     return {
         "rascunho_id": rascunho_id,
         "publicado": False,
         "aprovar_em": onde,
         "mensagem": (
             "Nada foi publicado. Este aplicativo não mostra o pedido de confirmação ao "
-            f"professor, então a aprovação é no portal: {onde}, rascunho #{rascunho_id}, "
-            "botão 'Aprovar e publicar'. Repasse isso ao professor em vez de tentar de novo."
+            f"professor, então a aprovação é no portal: {onde}, {como}. "
+            "Repasse isso ao professor em vez de tentar de novo."
         ),
     }
 
 
-def _recusado(rascunho_id: int) -> dict:
+def _recusado(rascunho_id: int, detalhe: dict | None = None) -> dict:
+    onde, como = _onde_aprovar(rascunho_id, detalhe)
     return {
         "rascunho_id": rascunho_id,
         "publicado": False,
-        "aprovar_em": _onde_aprovar(rascunho_id),
+        "aprovar_em": onde,
         "mensagem": (
             "Publicação não confirmada. Nada foi alterado — o rascunho continua "
             "disponível para revisão. Se o professor não viu pedido de confirmação, "
             "foi o aplicativo que respondeu sozinho: a aprovação é no portal, em "
-            f"{_onde_aprovar(rascunho_id)}, botão 'Aprovar e publicar'. Não tente de novo."
+            f"{onde}, {como}. Não tente de novo."
         ),
     }
+
+
+def _detalhe(rascunho_id: int) -> dict | None:
+    """O que é o rascunho, para dizer onde ele é aprovado. Sem resposta, vale o caminho geral."""
+    try:
+        return comando("detalhar_rascunho", rascunho=rascunho_id)
+    except Exception:
+        return None
 
 
 @mcp.tool(
@@ -868,8 +907,9 @@ async def publicar_rascunho(
     ele aceitar. Em cliente que não mostra esse pedido (o claude.ai, hoje), ela
     devolve onde aprovar no portal: repasse ao professor, sem insistir.
 
-    Se ele recusar, nada acontece — e o rascunho continua no portal, em
-    Admin > Rascunhos, para revisar com calma.
+    Se ele recusar, nada acontece — e a proposta continua no portal para
+    revisar com calma: o simulado na página dele, a questão avulsa no Banco de
+    questões, e o resto em Rascunhos. O retorno diz onde (`aprovar_em`).
 
     Publicado, o conteúdo passa a aparecer imediatamente para os alunos daquela
     turma (e só daquela turma).
@@ -884,7 +924,7 @@ async def publicar_rascunho(
             (getattr(resposta, "content", None) or {}).get("publicar")
         )
         if not aceitou:
-            return _recusado(alvo)
+            return _recusado(alvo, await _em_thread(_detalhe, alvo))
         return await _em_thread(_confirmar_e_publicar, alvo, itens)
 
     # Primeira rodada. Se um humano já aprovou no portal, publica direto.
@@ -896,7 +936,7 @@ async def publicar_rascunho(
     # Cliente que não sabe perguntar nada ao usuário: os dois canais abaixo não
     # chegariam ao professor. A aprovação continua humana — só muda de lugar.
     if not _cliente_pergunta_ao_professor(ctx):
-        return _aprovar_no_portal(alvo)
+        return _aprovar_no_portal(alvo, await _em_thread(_detalhe, alvo))
 
     resumo = await _em_thread(_resumo, alvo)
     mensagem = f"Publicar este conteúdo para os alunos?\n\n{resumo}"
@@ -914,6 +954,6 @@ async def publicar_rascunho(
         return _pedido_de_confirmacao(mensagem, alvo)
 
     if not (isinstance(resposta, AcceptedElicitation) and bool(resposta.data)):
-        return _recusado(alvo)
+        return _recusado(alvo, await _em_thread(_detalhe, alvo))
 
     return await _em_thread(_confirmar_e_publicar, alvo, itens)
