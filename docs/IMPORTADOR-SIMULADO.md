@@ -170,3 +170,16 @@ Questão de apostila pode parar na D: de A a D são obrigatórias, a E é opcion
   há texto para ler; vai pelos prints.
 * PDF inteiro no link, cortado em páginas pelo servidor: por ora, o professor
   tira o print da questão.
+
+## Leitura para a tela de "Novo simulado"
+
+Desde 11/10/2026 há um segundo jeito de o leitor ser chamado, sem link e sem
+rascunho: `POST /api/leitura/docx` (`envio_routes.so_leitura`). Quem chama é a
+API da plataforma, com `X-Servico`; sem o segredo a rota responde 403. Ela lê o
+.docx como sempre e devolve o resultado em vez de mandar gravar: as questões
+completas, as que não fecharam **com o que deu para ler** (`dados`) e o que
+falta nos avisos, e as figuras em base64 pela chave do leitor. A API guarda as
+figuras e entrega as questões à tela do professor, que confere e edita antes de
+criar o rascunho. Um documento só com questões incompletas também é aceito
+aqui — lá o professor completa.
+

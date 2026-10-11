@@ -13,16 +13,21 @@ do outro lado.
 from __future__ import annotations
 
 import base64
+import hmac
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, Header, UploadFile
 from starlette.concurrency import run_in_threadpool
 
 from app import leitor_docx
-from app.errors import RegraDeNegocio
+from app.config import get_settings
+from app.errors import NaoAutorizado, RegraDeNegocio
 from app.integracoes.vimeo import importacao as vimeo
 from app.mcp_server.api import interno_ou_erro
 
 router = APIRouter(prefix="/api/importacoes", tags=["importacao"])
+# Só leitura, pedida pela API: o professor importa o .docx de dentro de "Novo simulado", e as
+# questões voltam para a tela dele sem que nada seja gravado.
+so_leitura = APIRouter(prefix="/api/leitura", tags=["importacao"])
 
 LIMITE_DO_ARQUIVO = 25 * 1024 * 1024
 LIMITE_DO_PRINT = 5 * 1024 * 1024
@@ -74,7 +79,30 @@ async def enviar_arquivo(
     return await run_in_threadpool(interno_ou_erro, "registrar_docx", token=token, lido=lido)
 
 
-def _ler_docx(nome: str | None, conteudo: bytes) -> dict:
+@so_leitura.post("/docx")
+async def ler_docx(
+    arquivo: UploadFile = File(description="O .docx do simulado"),
+    x_servico: str | None = Header(default=None),
+) -> dict:
+    """Lê o .docx e devolve o que encontrou, sem gravar nada.
+
+    Quem chama é a API, com o segredo de serviço: é ela que confere a sessão do
+    professor, guarda as figuras e devolve as questões para a tela. Sem o
+    segredo esta rota não responde — o proxy de envio da API não o repassa, então
+    ninguém de fora chega aqui por ele.
+    """
+    esperado = get_settings().servico_token
+    if not esperado or not x_servico or not hmac.compare_digest(x_servico, esperado):
+        raise NaoAutorizado("Esta rota é só para a API da plataforma.")
+    conteudo = await arquivo.read(LIMITE_DO_ARQUIVO + 1)
+    if not (arquivo.filename or "").lower().endswith(".docx"):
+        raise RegraDeNegocio("Envie o arquivo .docx do simulado.")
+    if len(conteudo) > LIMITE_DO_ARQUIVO:
+        raise RegraDeNegocio(f"O arquivo passa de {LIMITE_DO_ARQUIVO // 1024 // 1024} MB.")
+    return await run_in_threadpool(_ler_docx, arquivo.filename, conteudo, True)
+
+
+def _ler_docx(nome: str | None, conteudo: bytes, para_a_tela: bool = False) -> dict:
     """O documento no formato que `/interno/registrar_docx` recebe.
 
     As figuras vão pela chave que o parser deu (`f1`, `f2`…), não por id: ele
@@ -85,7 +113,8 @@ def _ler_docx(nome: str | None, conteudo: bytes) -> dict:
     documento = leitor_docx.ler_docx(conteudo)
     leitura = leitor_docx.separar_questoes(documento.blocos)
     completas = [q for q in leitura.questoes if q.completa]
-    if not completas:
+    # Na leitura para a tela, a questão que não fechou também serve: o professor a completa lá.
+    if not completas and not (para_a_tela and leitura.questoes):
         raise RegraDeNegocio(
             "Não reconheci nenhuma questão completa neste arquivo (número, alternativas a) a e) "
             "e gabarito). Se ele não segue esse formato, monte o simulado pelo chat."
@@ -113,7 +142,10 @@ def _ler_docx(nome: str | None, conteudo: bytes) -> dict:
             for q in completas
         ],
         "incompletas": [
-            {"numero": q.numero, "avisos": q.avisos, "blocos": q.blocos}
+            # Para a tela vai também o que deu para ler da questão: o professor completa o resto.
+            {"numero": q.numero, "blocos": q.blocos,
+             **({"avisos": [*q.avisos, *(f"falta: {f}" for f in q.faltas)], "dados": q.como_entrada()}
+                if para_a_tela else {"avisos": q.avisos})}
             for q in leitura.questoes if q.numero not in numeros_completos
         ],
         "blocos": [{"indice": b.indice, "texto": b.texto} for b in documento.blocos],

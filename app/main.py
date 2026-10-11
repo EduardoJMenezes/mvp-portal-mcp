@@ -136,6 +136,7 @@ def _erro_inesperado(_: Request, __: Exception) -> JSONResponse:
 
 
 api.include_router(envio_routes.router)
+api.include_router(envio_routes.so_leitura)
 
 
 @api.get("/enviar/{token}", response_class=HTMLResponse, include_in_schema=False)
