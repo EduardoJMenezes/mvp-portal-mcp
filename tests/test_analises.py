@@ -119,8 +119,17 @@ async def test_a_analise_geral_e_pedida_pelo_nome_do_aluno_e_fica_com_o_professo
 
         geral = await tool("listar_analises_pendentes", aluno="João")
         assert (geral["recorte"], geral["simulado"]) == ("GERAL", None)
-        assert geral["alunos"][0]["respostas"] == 5
-        assert geral["alunos"][0]["outros_simulados"][0]["titulo"] == "Simulado 02"
+        resumo = geral["alunos"][0]
+        assert (resumo["respostas"], resumo["acertos"]) == (5, 2)
+        # O histórico não se lê como uma prova: o erro marcado e o em branco vêm separados, por ponto.
+        assert (resumo["marcou_errado"], resumo["em_branco"]) == (2, 1)
+        assert "erros_recentes" not in resumo
+        prova = resumo["simulados"][0]
+        assert (prova["titulo"], prova["acertos"], prova["em_branco"], prova["posicao"]) == ("Simulado 02", 2, 1, 1)
+        assert sum(p["marcou_errado"] for p in resumo["onde_erra"]) == 2
+        exemplos = [e for p in resumo["onde_erra"] for e in p["exemplos"]]
+        assert any(e.get("comentario_da_marcada", "").startswith("Você esqueceu de descontar a pureza") for e in exemplos)
+        assert resumo["repetidas"] == [] and resumo["curso"]["total"] >= 0
 
         gravado = await tool("gravar_analises", analises=[{"aluno_id": joao, "ponto_principal": "O João esquece a pureza."}])
         assert (gravado["recorte"], gravado["gravadas"], gravado["restam"]) == ("GERAL", 1, None)
@@ -141,6 +150,9 @@ def test_as_descricoes_dizem_para_quem_se_escreve_e_quando_o_resultado_sai():
     assert "não invente o motivo" in gravar
     assert "PARA O ALUNO, em segunda pessoa" in gravar
     assert "PARA O PROFESSOR, sobre o aluno, em terceira pessoa" in gravar
+    # Na geral, o em branco não vira motivo inventado, e prova de outra matéria não vira evolução.
+    assert "do em branco você não sabe o motivo" in gravar
+    assert "não se comparam direto" in gravar
     # O começo da listagem diz o caminho inteiro: é o que chega mesmo se a descrição for cortada.
     listar = " ".join(tools["listar_analises_pendentes"].description.split())[:700]
     assert "gravar_analises" in listar and "liberar_resultado_simulado" in listar

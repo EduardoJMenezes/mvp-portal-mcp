@@ -154,7 +154,10 @@ matéria por conta própria.
 Análise geral de um aluno: "faz a análise geral do João" é
 listar_analises_pendentes só com o aluno, escrever sobre ele para o professor
 (em terceira pessoa), mostrar na conversa e, com o ok, gravar_analises sem
-simulado. Fica no acompanhamento do aluno no portal; o aluno não vê.
+simulado. O material é o histórico inteiro: os erros agrupados por tema, o que
+ficou em branco contado à parte, as questões repetidas, as provas ao lado da
+média de quem fez e o que ele já fez do curso. Fica no acompanhamento do aluno
+no portal, de onde o professor imprime para a conversa; o aluno não vê.
 
 Criar, editar, remover e classificar (criar_modulo, criar_submodulo,
 editar_modulo, editar_item, remover_do_curso, cadastrar_assunto,
