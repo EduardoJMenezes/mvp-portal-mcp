@@ -144,6 +144,79 @@ async def editar_questao(
     )
 
 
+@mcp.tool(name="listar_questoes_sem_assunto", annotations=SOMENTE_LEITURA)
+def listar_questoes_sem_assunto(
+    limite: Annotated[int, Field(ge=1, le=100, description="Quantas questões por vez")] = 20,
+    deslocamento: Annotated[int, Field(ge=0, description="Para ler a página seguinte: quantas já foram lidas")] = 0,
+) -> dict:
+    """As questões do acervo que ainda não têm assunto, com a taxonomia de hoje junto.
+
+    É o começo de "quero classificar as questões que estão sem assunto". Quem
+    importa um .docx costuma não saber o assunto de cada questão; o professor
+    vem depois e classifica todas de uma vez, com você.
+
+    Cada questão vem enxuta — enunciado, alternativas, gabarito e o começo da
+    resolução, sem a figura — e com `origem`, o envio de onde ela veio ("20
+    questões de SIMULADO 02.docx"). `assuntos` é a lista de assuntos e
+    sub-assuntos que já existem; `total` é quantas estão sem assunto e `restam`
+    as que ficaram para a próxima página.
+
+    O que fazer com isto:
+      1. leia as questões e proponha, para cada uma, o assunto e o sub-assunto,
+         preferindo os que já existem;
+      2. mostre ao professor uma tabela (número, começo do enunciado, assunto ›
+         sub-assunto) e, à parte, os assuntos e sub-assuntos NOVOS que você
+         sugere criar. Se ele tiver uma lista de tópicos do simulado ou da
+         apostila, peça: ela vale mais que o seu palpite;
+      3. com o ok dele, aplique tudo numa chamada só de classificar_questoes.
+    Não classifique uma por uma com editar_questao.
+    """
+    return comando("listar_questoes_sem_assunto", limite=limite, deslocamento=deslocamento)
+
+
+@mcp.tool(name="classificar_questoes", annotations=ALTERA)
+def classificar_questoes(
+    classificacoes: Annotated[
+        list[dict],
+        Field(
+            min_length=1,
+            max_length=200,
+            description=(
+                "Uma linha por questão: {'questao': 81, 'assunto': 'Ligações Químicas', "
+                "'subassunto': 'Geometria molecular'}. O sub-assunto é opcional. A mesma questão não se repete"
+            ),
+        ),
+    ],
+    criar_novos: Annotated[
+        bool,
+        Field(description="true só depois de o professor aprovar os assuntos e sub-assuntos novos que você mostrou"),
+    ] = False,
+) -> dict:
+    """Classifica várias questões de uma vez: cada uma fica com o assunto e o sub-assunto da linha dela.
+
+    **Antes de chamar, mostre ao professor no chat a tabela inteira — qual
+    questão recebe qual assunto › sub-assunto — e espere o ok dele.** Vale na
+    hora e troca a classificação que a questão tinha. Ou valem todas as linhas,
+    ou nenhuma.
+
+    O nome do assunto e do sub-assunto tem de ser o de um que já existe,
+    escrito por inteiro (listar_questoes_sem_assunto e listar_assuntos mostram
+    quais). Se algum não existir, nada é classificado e o erro diz quais
+    faltam: ou era engano de nome, e você corrige, ou é assunto novo — então
+    mostre ao professor o que vai ser criado e, com o ok dele, chame de novo
+    com `criar_novos=true`, que cria o que falta e classifica.
+
+    Assunto é a etiqueta do conteúdo e **não** leva número de capítulo ("K03",
+    "L02"): a apostila muda de um ano para o outro. Prefira poucos assuntos,
+    com o detalhe no sub-assunto — é por eles que o aluno vê o desempenho dele
+    e que a plataforma indica o que revisar.
+
+    A resposta diz quantas foram classificadas, o que foi criado e quantas
+    questões ainda `restam_sem_assunto`.
+    """
+    return comando("classificar_questoes", classificacoes=classificacoes, criar_novos=criar_novos)
+
+
 @mcp.tool(name="remover_questao", annotations=REMOVE)
 def remover_questao(questao: Annotated[int, Field(description="Id da questão")]) -> dict:
     """Tira uma questão do acervo.

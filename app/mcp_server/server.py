@@ -136,10 +136,17 @@ prints (importar_prints), transcreva e crie as linhas. A questão tem de A a D, 
 a E quando houver. Questão que está em aula pode ir para um simulado, mas avise
 o professor: quem respondeu na aula já viu o gabarito.
 
+Questões sem assunto: quem importa um .docx costuma não classificar. Quando o
+professor pedir para classificar (ou categorizar) as questões, comece por
+listar_questoes_sem_assunto, proponha assunto e sub-assunto de todas numa
+tabela, separe o que seria assunto NOVO, e aplique com classificar_questoes
+numa chamada só, depois do ok dele. Sem assunto, a questão não entra no
+desempenho por assunto do aluno.
+
 Criar, editar, remover e classificar (criar_modulo, criar_submodulo,
 editar_modulo, editar_item, remover_do_curso, cadastrar_assunto,
-classificar_videos, editar_questao, remover_questao, editar_simulado,
-remover_simulado) alteram NA HORA, sem rascunho. Antes de chamar qualquer uma
+classificar_videos, classificar_questoes, editar_questao, remover_questao,
+editar_simulado, remover_simulado) alteram NA HORA, sem rascunho. Antes de chamar qualquer uma
 delas, mostre no chat um preview de como vai ficar — o antes e o depois, e
 quantos itens publicados ou alunos são afetados — e só chame depois do ok do
 professor, dado no próprio chat.

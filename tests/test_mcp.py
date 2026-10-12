@@ -23,7 +23,7 @@ from tests.senhas import hash_senha, hash_token, novo_token_mcp
 # Alteram o curso sem rascunho no meio: a confirmação é o preview no chat.
 ALTERAM_NA_HORA = {
     "criar_modulo", "criar_submodulo", "editar_modulo", "editar_item",
-    "remover_do_curso", "cadastrar_assunto", "classificar_videos",
+    "remover_do_curso", "cadastrar_assunto", "classificar_videos", "classificar_questoes",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
     "criar_eventos", "editar_evento", "remover_evento",
@@ -113,7 +113,7 @@ def test_tools_registradas_e_anotadas():
 
     esperadas = {
         # consulta
-        "listar_turmas", "listar_modulos", "listar_assuntos", "buscar_questoes",
+        "listar_turmas", "listar_modulos", "listar_assuntos", "buscar_questoes", "listar_questoes_sem_assunto",
         "listar_videos_vimeo", "listar_pastas_vimeo", "simular_importacao_vimeo",
         "listar_rascunhos", "detalhar_rascunho", "buscar_desempenho_aluno", "buscar_desempenho_por_assunto",
         "buscar_estatisticas_simulado", "listar_simulados", "detalhar_questao",
