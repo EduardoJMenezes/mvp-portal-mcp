@@ -138,7 +138,7 @@ def db(api_java):
     # Cada teste começa do zero. O Flyway não é tocado: só as tabelas do domínio.
     with Sessao() as limpeza:
         # Tabelas que só a API conhece (o seed não precisa delas), antes das que elas apontam.
-        for tabela in ("agenda_event_classes", "agenda_events", "item_classes", "menu_buttons"):
+        for tabela in ("agenda_event_classes", "agenda_events", "item_classes", "menu_buttons", "student_analyses"):
             limpeza.execute(text(f"DELETE FROM {tabela}"))
         for tabela in reversed(Base.metadata.sorted_tables):
             limpeza.execute(tabela.delete())

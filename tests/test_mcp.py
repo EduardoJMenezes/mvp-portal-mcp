@@ -117,6 +117,7 @@ def test_tools_registradas_e_anotadas():
         "listar_videos_vimeo", "listar_pastas_vimeo", "simular_importacao_vimeo",
         "listar_rascunhos", "detalhar_rascunho", "buscar_desempenho_aluno", "buscar_desempenho_por_assunto",
         "buscar_estatisticas_simulado", "listar_simulados", "detalhar_questao",
+        "listar_analises_pendentes", "gravar_analises",
         "detalhar_simulado", "buscar_ranking_simulado", "revisar_importacao",
         "importar_simulado_docx", "completar_questao_importada",
         "importar_prints", "ver_prints", "recortar_figura", "listar_menu", "listar_biblioteca", "listar_agenda",
@@ -137,7 +138,7 @@ def test_tools_registradas_e_anotadas():
                 "criar_questoes_como_itens", "importar_questoes_docx",
                 "criar_simulado_rascunho", "publicar_rascunho", "importar_simulado_docx",
                 "completar_questao_importada", "importar_prints", "recortar_figura",
-                "importar_pasta_vimeo_como_rascunho", "agendar_aula", *ALTERAM_NA_HORA}
+                "importar_pasta_vimeo_como_rascunho", "agendar_aula", "gravar_analises", *ALTERAM_NA_HORA}
     for nome, tool in tools.items():
         esperado = nome not in escritas
         assert tool.annotations.read_only_hint is esperado, f"{nome} com read_only_hint errado"
