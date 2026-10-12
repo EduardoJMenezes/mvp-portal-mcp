@@ -49,3 +49,13 @@ async def test_as_sem_assunto_sao_listadas_e_classificadas_numa_chamada_so(db, m
 
         detalhe = await tool("detalhar_questao", questao=segunda)
         assert detalhe["classificacao"] == [{"assunto": "Ligações de teste do lote", "subassunto": "Geometria molecular"}]
+
+
+def test_a_descricao_da_listagem_diz_o_que_fazer_logo_no_comeco():
+    """O passo a passo em lista, no fim da descrição, chegou cortado ao Claude: vai em texto, no começo."""
+    import asyncio
+
+    descricao = {t.name: t.description for t in asyncio.run(mcp._list_tools())}["listar_questoes_sem_assunto"]
+    comeco = " ".join(descricao.split())[:700]
+    assert "classificar_questoes" in comeco
+    assert "ok dele" in comeco

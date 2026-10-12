@@ -151,25 +151,22 @@ def listar_questoes_sem_assunto(
 ) -> dict:
     """As questões do acervo que ainda não têm assunto, com a taxonomia de hoje junto.
 
-    É o começo de "quero classificar as questões que estão sem assunto". Quem
-    importa um .docx costuma não saber o assunto de cada questão; o professor
-    vem depois e classifica todas de uma vez, com você.
+    É o começo de "quero classificar as questões que estão sem assunto". Leia
+    as questões, proponha o assunto e o sub-assunto de cada uma numa tabela,
+    preferindo os que já existem, e mostre ao professor, à parte, os assuntos
+    e sub-assuntos NOVOS que sugere criar. Com o ok dele, aplique tudo numa
+    chamada só de classificar_questoes — não classifique uma por uma com
+    editar_questao. Se o professor tiver uma lista de tópicos do simulado ou
+    da apostila, peça: ela vale mais que o seu palpite.
+
+    Quem importa um .docx costuma não saber o assunto de cada questão; o
+    professor vem depois e classifica todas de uma vez, com você.
 
     Cada questão vem enxuta — enunciado, alternativas, gabarito e o começo da
     resolução, sem a figura — e com `origem`, o envio de onde ela veio ("20
     questões de SIMULADO 02.docx"). `assuntos` é a lista de assuntos e
     sub-assuntos que já existem; `total` é quantas estão sem assunto e `restam`
     as que ficaram para a próxima página.
-
-    O que fazer com isto:
-      1. leia as questões e proponha, para cada uma, o assunto e o sub-assunto,
-         preferindo os que já existem;
-      2. mostre ao professor uma tabela (número, começo do enunciado, assunto ›
-         sub-assunto) e, à parte, os assuntos e sub-assuntos NOVOS que você
-         sugere criar. Se ele tiver uma lista de tópicos do simulado ou da
-         apostila, peça: ela vale mais que o seu palpite;
-      3. com o ok dele, aplique tudo numa chamada só de classificar_questoes.
-    Não classifique uma por uma com editar_questao.
     """
     return comando("listar_questoes_sem_assunto", limite=limite, deslocamento=deslocamento)
 
