@@ -83,6 +83,25 @@ Quem não casar com nenhum operador não abre sessão: recebe 401, não um catá
 de ferramentas que não poderia usar. Aluno mapeado também não entra — o papel
 continua mandando (§4).
 
+### Liberar uma conta, passo a passo
+
+1. **Ache o id da conta do GitHub.** Em `https://api.github.com/users/<login>`,
+   é o campo `id`. Se a pessoa já tentou conectar, o log do serviço `mcp` traz
+   o id na linha da recusa.
+2. **Confira o e-mail do operador no portal.** Tem de ser o e-mail de uma conta
+   ADMIN ou GERENCIADOR que **exista no banco**, escrito como está lá. E-mail
+   pessoal de quem está entrando não serve: o mapa não cria conta, só aponta
+   para uma.
+3. **Acrescente o par à variável** `MCP_OAUTH_OPERADORES` do serviço `mcp`, no
+   Railway: `<id>=<e-mail do operador>`, separado dos outros por vírgula. O
+   serviço reinicia sozinho; na partida ele avisa se alguma entrada foi
+   ignorada.
+4. **Remova o conector e adicione de novo** no claude.ai. O que ficou com erro
+   não se conserta sozinho.
+
+Foi o passo 2 que derrubou o conector em 11/10/2026: o id estava no mapa,
+apontando para um e-mail que não era de ninguém no banco.
+
 ## Adicionar o conector no claude.ai
 
 Configurações → **Conectores** → **Adicionar conector personalizado** → cole:
@@ -94,6 +113,10 @@ https://SEU-APP.up.railway.app/mcp
 O claude.ai vai abrir o GitHub, pedir autorização e voltar. Depois disso as
 tools aparecem na conversa (pode ser preciso habilitar o conector no seletor de
 ferramentas daquela conversa).
+
+É o mesmo passo a passo da tela **Conectar ao Claude** do portal. Depois de um
+deploy que acrescenta ou muda ferramenta, remova o conector e adicione de novo:
+o claude.ai guarda a lista de quando ele foi adicionado.
 
 ## Conferir sem abrir o navegador
 
@@ -138,7 +161,7 @@ morre a cada deploy: o conector cairia toda vez que subisse uma versão.
 |---|---|
 | `redirect_uri_mismatch` no GitHub | callback do app OAuth diferente de `<base>/auth/callback` |
 | `.well-known` devolve HTML | portal estático montado antes das rotas de OAuth |
-| conecta e toda tool dá 401 | id da conta do GitHub fora de `MCP_OAUTH_OPERADORES` (o mapa é por id numérico, não por login), ou mapeado para alguém que não é ADMIN/GERENCIADOR |
+| o claude.ai diz "A autorização com … falhou" e o conector fica "sem ferramentas disponíveis" | o login no GitHub passou e o servidor recusou a sessão: id da conta fora de `MCP_OAUTH_OPERADORES` (o mapa é por id numérico, não por login), ou apontando para um e-mail que não existe no banco ou não é de ADMIN/GERENCIADOR. O log do `mcp` diz `conta do GitHub <login> (id <id>) não corresponde a nenhum operador` — ver "Liberar uma conta" |
 | conector cai depois de um deploy | `DATABASE_URL` sem Postgres — o armazenamento voltou a ser o disco efêmero |
 | `POST /register` responde 500 | o armazenamento não conectou no Postgres; o log traz `StoreSetupError` com o motivo |
 | o Claude Code parou de entrar | o token opaco continua valendo; confira se o header não se perdeu na configuração do cliente |
