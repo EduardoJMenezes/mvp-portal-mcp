@@ -401,7 +401,8 @@ def buscar_desempenho_por_assunto(
     `distribuicao` (quantos marcaram cada letra) e o `gabarito`, das mais
     erradas para as mais acertadas — é onde se vê qual alternativa enganou
     mais. `sem_assunto` conta respostas em questões sem classificação, que
-    ficam de fora: sugira classificá-las (editar_questao).
+    ficam de fora: sugira classificá-las de uma vez (listar_questoes_sem_assunto
+    e classificar_questoes).
 
     `respostas: 0` significa que ninguém respondeu ainda; não invente números.
     """
