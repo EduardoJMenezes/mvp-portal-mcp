@@ -445,6 +445,11 @@ def listar_analises_pendentes(
     As regras de como escrever cada uma estão na descrição de gravar_analises.
     A plataforma não chama modelo nenhum: quem escreve é você.
 
+    Nos dois casos vêm `respondidas` (as questões em que ele marcou uma
+    alternativa), `marcou_errado`, `em_branco` e `acerto_no_que_respondeu` (o
+    acerto só sobre as respondidas), no total e em cada linha de
+    `por_assunto`. A análise é sobre o que ele respondeu: ver gravar_analises.
+
     No simulado, de cada aluno vêm: `por_assunto` (respostas, acertos e nível
     por assunto e sub-assunto), `erros_recentes` (onde errou, o que marcou, o
     gabarito e o comentário que o professor escreveu para a alternativa
@@ -516,6 +521,16 @@ def gravar_analises(
     que se repete em dois erros ou mais; erro isolado é "pontual", e marcar
     uma alternativa uma vez pode ter sido chute.
 
+    A ANÁLISE É SOBRE O QUE O ALUNO RESPONDEU: os acertos e os erros em que
+    ele marcou uma alternativa. Questão em branco não mostra o que ele sabe
+    nem o que confunde: entra em uma frase só (quantas e em que prova), nunca
+    como ponto principal, nunca como padrão, e não rebaixa a leitura de um
+    tema. Ao falar de um tema, use o acerto sobre o que ele respondeu
+    (`acertos` em `respondidas`: "das 3 que respondeu de Eletroquímica,
+    acertou 1; deixou 4 em branco"). Tema em que ele não respondeu nenhuma:
+    diga só que não há resposta para avaliar. Isso vale para o simulado e
+    para a geral.
+
     Com `simulado`, escreva PARA O ALUNO, em segunda pessoa ("você"), direto,
     sem elogio vazio nem bronca. Grave o lote sem pedir ok um a um: nada chega
     ao aluno antes de liberar_resultado_simulado, que é onde o professor
@@ -548,16 +563,16 @@ def gravar_analises(
     Na análise geral os campos são os mesmos, mas a tela dá outros títulos e
     cada um responde a outra pergunta:
 
-    `ponto_principal` — a leitura do aluno em uma ideia, com o número por
-    trás. Até 700 caracteres.
+    `ponto_principal` — a leitura do aluno em uma ideia, tirada do que ele
+    respondeu, com o número por trás. Até 700 caracteres.
 
-    `padroes` (na tela, "Onde erra e por quê") — por tema, do que mais pesa
-    para o que menos pesa, a partir de `onde_erra`: o que os comentários dos
-    `exemplos` dizem que ele confunde. Separe o que ele marcou errado do que
-    deixou em branco: do em branco você não sabe o motivo (conteúdo, tempo ou
-    ter pulado); diga quantas e em que provas, e deixe a pergunta para a
-    conversa. Use `repetidas`: errar de novo a mesma questão pesa mais que um
-    erro novo.
+    `padroes` (na tela, "Onde erra e por quê") — os erros em que ele marcou
+    uma alternativa, por tema, do que mais pesa para o que menos pesa, a
+    partir de `onde_erra`: o que os comentários dos `exemplos` dizem que ele
+    confunde. Use `repetidas`: errar de novo a mesma questão pesa mais que um
+    erro novo. O que ficou em branco vai numa linha no fim: do em branco você
+    não sabe o motivo (conteúdo, tempo ou ter pulado); diga quantas e em que
+    provas, e deixe a pergunta para a conversa.
 
     `melhorou` (na tela, "Evolução") — a trajetória em `simulados`, com a
     média de quem fez ao lado; as `repetidas` que ele corrigiu; o que mudou

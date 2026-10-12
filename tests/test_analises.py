@@ -73,6 +73,9 @@ async def test_gerar_o_resultado_do_simulado_e_listar_escrever_gravar_e_liberar(
         aluno = fila["alunos"][0]
         assert (aluno["aluno_id"], aluno["aluno"]) == (joao, "João")
         assert (aluno["respostas"], aluno["acertos"], aluno["erros"]) == (5, 2, 3)
+        # Das 4 que ele marcou, acertou 2; a que ficou em branco vem à parte.
+        assert (aluno["respondidas"], aluno["marcou_errado"], aluno["em_branco"]) == (4, 2, 1)
+        assert aluno["acerto_no_que_respondeu"] == 50.0
         assert aluno["por_assunto"][0]["nome"] == "Estequiometria"
 
         erros = {e["onde"]: e for e in aluno["erros_recentes"]}
@@ -123,6 +126,7 @@ async def test_a_analise_geral_e_pedida_pelo_nome_do_aluno_e_fica_com_o_professo
         assert (resumo["respostas"], resumo["acertos"]) == (5, 2)
         # O histórico não se lê como uma prova: o erro marcado e o em branco vêm separados, por ponto.
         assert (resumo["marcou_errado"], resumo["em_branco"]) == (2, 1)
+        assert (resumo["respondidas"], resumo["acerto_no_que_respondeu"]) == (4, 50.0)
         assert "erros_recentes" not in resumo
         prova = resumo["simulados"][0]
         assert (prova["titulo"], prova["acertos"], prova["em_branco"], prova["posicao"]) == ("Simulado 02", 2, 1, 1)
@@ -157,6 +161,9 @@ def test_as_descricoes_dizem_para_quem_se_escreve_e_quando_o_resultado_sai():
     # Na geral, o em branco não vira motivo inventado, e prova de outra matéria não vira evolução.
     assert "do em branco você não sabe o motivo" in gravar
     assert "não se comparam direto" in gravar
+    # A análise é sobre o que ele respondeu: o em branco não vira ponto principal nem padrão.
+    assert "A ANÁLISE É SOBRE O QUE O ALUNO RESPONDEU" in gravar
+    assert "nunca como ponto principal" in gravar
     # O começo da listagem diz o caminho inteiro: é o que chega mesmo se a descrição for cortada.
     listar = " ".join(tools["listar_analises_pendentes"].description.split())[:700]
     assert "gravar_analises" in listar and "liberar_resultado_simulado" in listar

@@ -151,6 +151,10 @@ liberar_resultado_simulado. A análise do simulado é escrita para o aluno (em
 "você"), só com os números e os comentários que vêm no resumo, sem explicar a
 matéria por conta própria.
 
+Toda análise de aluno é sobre o que ele respondeu: os acertos e os erros em que
+marcou uma alternativa. Questão em branco entra em uma frase (quantas e em que
+prova), nunca como ponto principal nem como padrão.
+
 Análise geral de um aluno: "faz a análise geral do João" é
 listar_analises_pendentes só com o aluno, escrever sobre ele para o professor
 (em terceira pessoa), mostrar na conversa e, com o ok, gravar_analises sem
