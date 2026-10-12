@@ -79,7 +79,7 @@ async def test_a_fila_entrega_o_resumo_e_a_analise_gravada_tira_o_aluno_dela(db,
         assert primeiro["comentario_da_marcada"].startswith("Você esqueceu de descontar a pureza")
         # Em branco conta como erro, sem alternativa; sem comentário, só se sabe que ele errou.
         assert erros["Simulado 02, questão 4"]["marcada"] is None
-        assert erros["Simulado 02, questão 5"]["comentario_da_marcada"] is None
+        assert "comentario_da_marcada" not in erros["Simulado 02, questão 5"]
 
         gravado = await tool("gravar_analises", analises=[
             {"aluno_id": joao, "ponto_principal": "Seu ponto principal agora: pureza.",
