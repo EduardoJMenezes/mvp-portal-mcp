@@ -1,8 +1,10 @@
-"""A análise personalizada do aluno: a plataforma entrega o resumo e guarda o texto; quem escreve é o Claude."""
+"""O resultado do simulado sai quando o professor libera, com a análise que o Claude dele escreveu."""
 
 import asyncio
 from datetime import UTC, datetime, timedelta
 
+import pytest
+from fastmcp.exceptions import ToolError
 from sqlalchemy import text
 
 from app.mcp_server.server import mcp
@@ -49,71 +51,99 @@ def _simulado_encerrado(db, mundo):
     db.execute(text("UPDATE question_options SET comentario = :c WHERE questao_id = :q AND letra = 'A'"),
                {"c": "Você esqueceu de descontar a pureza. Falta revisar: pureza.", "q": questoes[0].id})
     db.commit()
-    return questoes
+    return simulado, questoes
 
 
-async def test_a_fila_entrega_o_resumo_e_a_analise_gravada_tira_o_aluno_dela(db, mundo, api_java, monkeypatch):
+async def test_gerar_o_resultado_do_simulado_e_listar_escrever_gravar_e_liberar(db, mundo, api_java, monkeypatch):
     from fastmcp import Client
 
     _quem_esta_pedindo(monkeypatch, mundo)
-    questoes = _simulado_encerrado(db, mundo)
+    simulado, questoes = _simulado_encerrado(db, mundo)
     joao = mundo["joao"].usuario_id
 
     async with Client(mcp) as cliente:
         async def tool(ferramenta, /, **argumentos):
             return (await cliente.call_tool(ferramenta, argumentos)).data
 
-        fila = await tool("listar_analises_pendentes")
-        assert fila["na_fila"] == 1 and fila["restam"] == 0
+        fila = await tool("listar_analises_pendentes", simulado="Simulado 02")
+        assert (fila["recorte"], fila["simulado"], fila["resultado_liberado"]) == ("SIMULADO", "Simulado 02", False)
+        assert (fila["participantes"], fila["na_fila"], fila["restam"]) == (1, 1, 0)
+        # Só a primeira questão tem comentário: nas outras quatro, quem escreve só sabe que ele errou.
+        assert (fila["questoes"], fila["questoes_sem_comentario"]) == (5, 4)
         aluno = fila["alunos"][0]
-        assert (aluno["aluno_id"], aluno["aluno"], aluno["motivo"]) == (joao, "João", "primeira análise")
+        assert (aluno["aluno_id"], aluno["aluno"]) == (joao, "João")
         assert (aluno["respostas"], aluno["acertos"], aluno["erros"]) == (5, 2, 3)
         assert aluno["por_assunto"][0]["nome"] == "Estequiometria"
-        assert aluno["por_assunto"][0]["subassuntos"][0]["nome"] == "Pureza e rendimento"
 
         erros = {e["onde"]: e for e in aluno["erros_recentes"]}
         primeiro = erros["Simulado 02, questão 1"]
         assert primeiro["questao_id"] == questoes[0].id
         assert (primeiro["marcada"], primeiro["gabarito"]) == ("A", "B")
-        # O que o professor escreveu para a alternativa marcada: é o material de quem escreve.
         assert primeiro["comentario_da_marcada"].startswith("Você esqueceu de descontar a pureza")
-        # Em branco conta como erro, sem alternativa; sem comentário, só se sabe que ele errou.
         assert erros["Simulado 02, questão 4"]["marcada"] is None
         assert "comentario_da_marcada" not in erros["Simulado 02, questão 5"]
 
-        gravado = await tool("gravar_analises", analises=[
-            {"aluno_id": joao, "ponto_principal": "Seu ponto principal agora: pureza.",
-             "proximos_passos": "Rever a questão 1 do Simulado 02."},
-            {"aluno_id": joao, "ponto_principal": "Repetida."},
-            {"aluno_id": mundo["pedro"].usuario_id, "ponto_principal": "Pedro não respondeu nada."},
+        gravado = await tool("gravar_analises", simulado="Simulado 02", analises=[
+            {"aluno_id": joao, "ponto_principal": "Seu ponto principal: pureza.", "proximos_passos": "Rever a questão 1."},
+            {"aluno_id": mundo["pedro"].usuario_id, "ponto_principal": "Pedro não fez a prova."},
         ])
-        assert gravado["gravadas"] == 1 and gravado["alunos"] == ["João"]
-        assert gravado["restam_na_fila"] == 0
-        assert [r["aluno_id"] for r in gravado["recusadas"]] == [joao, mundo["pedro"].usuario_id]
-        assert "duas vezes" in gravado["recusadas"][0]["motivo"]
-        assert "não tem resposta que conte" in gravado["recusadas"][1]["motivo"]
+        assert (gravado["recorte"], gravado["gravadas"], gravado["alunos"]) == ("SIMULADO", 1, ["João"])
+        assert (gravado["restam"], gravado["resultado_liberado"]) == (0, False)
+        assert "não fez 'Simulado 02'" in gravado["recusadas"][0]["motivo"]
+        assert (await tool("listar_analises_pendentes", simulado="Simulado 02"))["alunos"] == []
 
-        assert (await tool("listar_analises_pendentes"))["alunos"] == []
-        # Pedido pelo nome, ele vem mesmo fora da fila, com a análise anterior junto.
-        de_novo = (await tool("listar_analises_pendentes", aluno="João"))["alunos"][0]
-        assert de_novo["motivo"] == "pedida pelo professor"
-        assert de_novo["analise_anterior"]["ponto_principal"] == "Seu ponto principal agora: pureza."
+        # Até aqui o aluno não vê nada: quem solta o resultado é o professor.
+        liberado = await tool("liberar_resultado_simulado", simulado="Simulado 02")
+        assert (liberado["liberado_agora"], liberado["participantes"]) == (True, 1)
+        assert (liberado["com_analise"], liberado["sem_analise"]) == (1, 0)
+        assert (await tool("liberar_resultado_simulado", simulado="Simulado 02"))["liberado_agora"] is False
+        assert (await tool("detalhar_simulado", simulado="Simulado 02"))["resultado_liberado_em"]
 
-    linha = db.execute(text("SELECT aluno_id, escrita_por_id, respostas FROM student_analyses")).one()
-    assert tuple(linha) == (joao, mundo["professor"].usuario_id, 5)
+    linha = db.execute(text("SELECT aluno_id, simulado_id, escrita_por_id FROM student_analyses")).one()
+    assert tuple(linha) == (joao, simulado.id, mundo["professor"].usuario_id)
 
 
-def test_gravar_analises_e_a_excecao_escrita_e_diz_o_que_nao_pode():
-    """Vai ao aluno sem ok um a um; a descrição é o que segura quem escreve no material aprovado."""
+async def test_a_analise_geral_e_pedida_pelo_nome_do_aluno_e_fica_com_o_professor(db, mundo, api_java, monkeypatch):
+    from fastmcp import Client
+
+    _quem_esta_pedindo(monkeypatch, mundo)
+    _simulado_encerrado(db, mundo)
+    joao = mundo["joao"].usuario_id
+
+    async with Client(mcp) as cliente:
+        async def tool(ferramenta, /, **argumentos):
+            return (await cliente.call_tool(ferramenta, argumentos)).data
+
+        with pytest.raises(ToolError, match="Informe o simulado"):
+            await tool("listar_analises_pendentes")
+
+        geral = await tool("listar_analises_pendentes", aluno="João")
+        assert (geral["recorte"], geral["simulado"]) == ("GERAL", None)
+        assert geral["alunos"][0]["respostas"] == 5
+        assert geral["alunos"][0]["outros_simulados"][0]["titulo"] == "Simulado 02"
+
+        gravado = await tool("gravar_analises", analises=[{"aluno_id": joao, "ponto_principal": "O João esquece a pureza."}])
+        assert (gravado["recorte"], gravado["gravadas"], gravado["restam"]) == ("GERAL", 1, None)
+        de_novo = await tool("listar_analises_pendentes", aluno="João")
+        assert de_novo["alunos"][0]["analise_anterior"]["ponto_principal"] == "O João esquece a pureza."
+
+    assert db.execute(text("SELECT simulado_id FROM student_analyses")).scalar_one() is None
+
+
+def test_as_descricoes_dizem_para_quem_se_escreve_e_quando_o_resultado_sai():
+    """A descrição é o que segura quem escreve no material aprovado e na ordem certa."""
     tools = {t.name: t for t in asyncio.run(mcp._list_tools())}
+    assert "liberar_resultado_simulado" in ALTERAM_NA_HORA
     assert "gravar_analises" not in ALTERAM_NA_HORA
 
     gravar = " ".join(tools["gravar_analises"].description.split())
-    assert "sem aprovação uma a uma" in gravar
     assert "Não explique a matéria por conta própria" in gravar
     assert "não invente o motivo" in gravar
-    assert "mostre o texto e grave depois do ok" in gravar
-    # O começo da listagem diz o que fazer: é o que chega mesmo se a descrição for cortada.
-    listar = " ".join(tools["listar_analises_pendentes"].description.split())[:500]
-    assert "gravar_analises" in listar and "100 alunos" in listar
-    assert "ÚNICA escrita que chega ao aluno sem o ok" in " ".join(mcp.instructions.split())
+    assert "PARA O ALUNO, em segunda pessoa" in gravar
+    assert "PARA O PROFESSOR, sobre o aluno, em terceira pessoa" in gravar
+    # O começo da listagem diz o caminho inteiro: é o que chega mesmo se a descrição for cortada.
+    listar = " ".join(tools["listar_analises_pendentes"].description.split())[:700]
+    assert "gravar_analises" in listar and "liberar_resultado_simulado" in listar
+    liberar = " ".join(tools["liberar_resultado_simulado"].description.split())
+    assert "não se desfaz" in liberar
+    assert "só vê o resultado quando o professor libera" in " ".join(mcp.instructions.split())

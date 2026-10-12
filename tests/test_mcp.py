@@ -24,7 +24,7 @@ from tests.senhas import hash_senha, hash_token, novo_token_mcp
 ALTERAM_NA_HORA = {
     "criar_modulo", "criar_submodulo", "editar_modulo", "editar_item",
     "remover_do_curso", "cadastrar_assunto", "classificar_videos", "classificar_questoes",
-    "editar_questao", "remover_questao", "editar_simulado", "remover_simulado",
+    "editar_questao", "remover_questao", "editar_simulado", "remover_simulado", "liberar_resultado_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
     "criar_eventos", "editar_evento", "remover_evento",
 }
