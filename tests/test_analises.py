@@ -130,6 +130,10 @@ async def test_a_analise_geral_e_pedida_pelo_nome_do_aluno_e_fica_com_o_professo
         exemplos = [e for p in resumo["onde_erra"] for e in p["exemplos"]]
         assert any(e.get("comentario_da_marcada", "").startswith("Você esqueceu de descontar a pureza") for e in exemplos)
         assert resumo["repetidas"] == [] and resumo["curso"]["total"] >= 0
+        assert (resumo["repetidas_em_branco"], resumo["repetidas_fora_do_resumo"]) == (0, 0)
+        # Só a primeira questão tem comentário: no outro erro marcado, quem escreve só sabe que ele errou.
+        assert resumo["marcou_errado_sem_comentario"] == 1
+        assert [b for p in resumo["onde_erra"] for b in p["em_branco_em"]] == ["Simulado 02: questão 4"]
 
         gravado = await tool("gravar_analises", analises=[{"aluno_id": joao, "ponto_principal": "O João esquece a pureza."}])
         assert (gravado["recorte"], gravado["gravadas"], gravado["restam"]) == ("GERAL", 1, None)
