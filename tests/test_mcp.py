@@ -145,7 +145,11 @@ def test_tools_registradas_e_anotadas():
 
 
 def test_instrucoes_do_servidor_reforcam_a_regra():
-    assert "nunca publique" in (mcp.instructions or "").lower()
+    instrucoes = " ".join((mcp.instructions or "").lower().split())
+    assert "questão e simulado não chegam aos alunos sem aprovação" in instrucoes
+    # A exceção, escrita: montar o curso já publica, e o link é para conferir.
+    assert "montar o curso não pede aprovação" in instrucoes
+    assert "não um link de aprovação" in instrucoes
 
 
 def test_tool_que_altera_na_hora_pede_preview_e_ok_no_chat():
@@ -277,14 +281,14 @@ async def test_simulado_pelo_mcp_nasce_num_rascunho_e_se_ajusta_na_hora(db, mund
         assert ranking["participantes"] == 0 and ranking["parcial"] is True
 
 
-def _rascunho_de_itens(mundo):
-    """Uma proposta de itens, criada pela mesma ponte que as tools usam."""
+def _rascunho_de_questao(mundo):
+    """Uma questão proposta, criada pela mesma ponte que as tools usam: ela, sim, espera aprovação."""
     from app.mcp_server.api import comando
 
     return comando(
-        "importar_videos_como_itens", turma="Extensivo 2027", modulo="K01 - Estequiometria",
-        submodulo="Aulas", videos=[{"vimeo_id": "novo-mcp", "titulo": "Vídeo novo"}],
-    )["rascunho"]["rascunho_id"]
+        "criar_questao_rascunho", enunciado="Proposta do Claude",
+        alternativas={"A": "1", "B": "2", "C": "3", "D": "4"}, gabarito="A",
+    )["rascunho_id"]
 
 
 def _detalhe(rid: int) -> dict:
@@ -299,14 +303,35 @@ async def test_publicar_em_cliente_sem_formulario_manda_aprovar_no_portal(db, mu
     from fastmcp import Client
 
     _quem_esta_pedindo(monkeypatch, mundo)
-    rid = _rascunho_de_itens(mundo)
+    rid = _rascunho_de_questao(mundo)
 
     async with Client(mcp) as cliente:  # sem handler: não declara que mostra formulário
         saida = (await cliente.call_tool("publicar_rascunho", {"rascunho_id": rid})).data
 
     assert saida["publicado"] is False
-    assert f"#{rid}" in saida["mensagem"] and "Aprovar e publicar" in saida["mensagem"]
+    # A questão é aprovada no Banco de questões (sem PORTAL_URL, o caminho vem por extenso).
+    assert "/admin/questoes/editar/" in saida["aprovar_em"] or "Banco de questões" in saida["aprovar_em"]
+    assert "Publicar" in saida["mensagem"]
     assert _detalhe(rid)["publicado"] is False
+
+
+async def test_videos_do_curso_ja_saem_publicados_com_o_link_do_modulo(db, mundo, api_java, monkeypatch):
+    """Montar o curso não pede aprovação: o Claude devolve o link do módulo para o professor conferir."""
+    from fastmcp import Client
+
+    _quem_esta_pedindo(monkeypatch, mundo)
+
+    async with Client(mcp) as cliente:  # sem handler: nem precisaria de formulário
+        saida = (await cliente.call_tool("importar_videos_como_itens", {
+            "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Aulas",
+            "videos": [{"vimeo_id": "novo-mcp", "titulo": "Vídeo novo"}],
+        })).data
+
+    assert saida["rascunho"]["publicado"] is True
+    assert saida["aviso"].startswith("Publicado")
+    assert saida["rascunho"]["modulo_id"]
+    modulo = saida["rascunho"]["modulo_id"]
+    assert saida["conferir_em"].endswith((f"/admin/biblioteca/?modulo={modulo}", f"módulo #{modulo}"))
 
 
 async def test_publicar_em_cliente_com_formulario_so_publica_depois_do_aceite(db, mundo, api_java, monkeypatch):
@@ -314,7 +339,7 @@ async def test_publicar_em_cliente_com_formulario_so_publica_depois_do_aceite(db
     from fastmcp.client.elicitation import ElicitResult
 
     _quem_esta_pedindo(monkeypatch, mundo)
-    rid = _rascunho_de_itens(mundo)
+    rid = _rascunho_de_questao(mundo)
     perguntas = []
 
     async def professor(mensagem, tipo, params, contexto):

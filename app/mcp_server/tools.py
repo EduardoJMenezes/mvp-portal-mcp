@@ -209,8 +209,8 @@ def _avaliar_plano(plano, turma, destinos) -> dict:
         "destinos": saida,
         "sem_destino": [i.resumo() for i in sem_destino],
         "observacao": (
-            "Nada foi gravado. Confirme com o professor e chame "
-            "importar_pasta_vimeo_como_rascunho para criar o rascunho."
+            "Nada foi gravado. Mostre ao professor para onde vai cada faixa e chame "
+            "importar_pasta_vimeo_como_rascunho, que já publica."
             + (
                 f" Atenção: {len(sem_destino)} vídeo(s) ficaram sem destino — diga a faixa "
                 "deles ou informe um destino sem faixa."
@@ -251,10 +251,10 @@ def _casar(candidatos: dict, referencia: str, rotulo: str, onde: str) -> dict:
 
 
 def _aplicar_plano(plano, turma, destinos) -> dict:
-    """Grava o plano como RASCUNHO — um por destino. Continua sem publicar nada.
+    """Grava o plano — um lote por destino — e publica: montar o curso não pede aprovação.
 
-    Cada sub-módulo é um lote de aprovação próprio: o professor pode liberar o
-    K01 e segurar o K02 sem depender de ter importado em chamadas separadas.
+    Cada destino é uma chamada a importar_videos_como_itens, que já publica. O
+    retorno traz o link de cada módulo para o professor conferir.
     """
     if not plano.itens:
         raise ToolError(f"A pasta {plano.pasta_id} não tem vídeos para importar.")
@@ -265,14 +265,14 @@ def _aplicar_plano(plano, turma, destinos) -> dict:
         if not grupo["itens"]:
             continue
         destino = grupo["destino"]
-        criados.append(comando(
+        criados.append(_com_onde_conferir_o_curso(comando(
             "importar_videos_como_itens",
             turma=turma, modulo=destino["modulo"], submodulo=destino["submodulo"],
             videos=[
                 item.para_importacao(destino.get("assunto"), destino.get("subassunto"))
                 for item in grupo["itens"]
             ],
-        ))
+        )))
 
     if not criados:
         raise ToolError(
@@ -285,8 +285,10 @@ def _aplicar_plano(plano, turma, destinos) -> dict:
         "turma": turma,
         "rascunhos": criados,
         "sem_destino": [i.resumo() for i in sem_destino],
+        "conferir_em": list(dict.fromkeys(c["conferir_em"] for c in criados)),
+        "instrucao": INSTRUCAO_DO_CURSO,
         "aviso": (
-            "Nada foi publicado. Cada rascunho precisa da aprovação do professor."
+            "Publicado: os vídeos já aparecem para os alunos das turmas de cada módulo."
             + (
                 f" {len(sem_destino)} vídeo(s) ficaram de fora por não casarem com nenhuma faixa."
                 if sem_destino
@@ -740,7 +742,7 @@ async def criar_questoes_como_itens(
         ),
     ] = None,
 ) -> dict:
-    """Põe questões num sub-módulo, em RASCUNHO: cada uma vira uma linha que o aluno responde na aula.
+    """Põe questões num sub-módulo, já publicadas: cada uma vira uma linha que o aluno responde na aula.
 
     É o caminho da apostila: "as questões do K01, com as resoluções". Na aula o
     aluno marca UMA vez, e o gabarito, a resolução comentada e o vídeo de
@@ -752,25 +754,27 @@ async def criar_questoes_como_itens(
     criar_simulado_rascunho — Markdown, fórmula em LaTeX ou índice em Unicode,
     `![](figura:pendente)` onde houver figura — e proponha assunto e
     sub-assunto de cada uma (listar_assuntos): é por eles que sai a devolutiva
-    do aluno. Questão com figura pendente não publica.
+    do aluno. Questão com figura pendente (ou sem A-D) fica em rascunho, e o
+    `aviso` diz qual: acerte-a e chame publicar_rascunho, que publica sem pedir
+    confirmação.
 
     Módulo e sub-módulo precisam existir (listar_modulos, criar_modulo,
     criar_submodulo). Questão do acervo entra pelo id, e precisa estar
     publicada. A resolução em vídeo é da questão: informe `vimeo_id` em cada
     uma, ou a pasta do Vimeo que o professor disser.
 
-    Nada aparece para os alunos até publicar_rascunho. Mostre o detalhe
-    devolvido — as linhas, as questões e os gabaritos — e espere o ok do
-    professor.
+    Montar o curso não pede aprovação: o que sai daqui os alunos já veem.
+    Quando terminar, passe ao professor o link `conferir_em` — é o módulo no
+    portal, para ele conferir; não é link de aprovação.
     """
     resolucoes = None
     if pasta_resolucao:
         resolucoes = vimeo_importacao.resolucoes_por_numero(await _ler_plano(pasta_resolucao))
-    return await comando_async(
+    return _com_onde_conferir_o_curso(await comando_async(
         "criar_questoes_como_itens",
         turma=turma, modulo=modulo, submodulo=submodulo,
         questoes=await _questoes_com_resolucao(questoes), resolucoes=resolucoes,
-    )
+    ))
 
 
 @mcp.tool(name="importar_videos_como_itens", annotations=ESCREVE_RASCUNHO)
@@ -789,22 +793,23 @@ def importar_videos_como_itens(
         ),
     ],
 ) -> dict:
-    """Cria, em RASCUNHO, um item por vídeo dentro de um sub-módulo.
+    """Põe vídeos num sub-módulo, um item por vídeo, já publicados.
 
-    É o CRUD de vídeo do curso: liste com listar_videos_vimeo, confirme com o
+    É o CRUD de vídeo do curso: liste com listar_videos_vimeo, veja com o
     professor quais entram e onde, e chame esta tool. O `nome` do item, sem
     ser informado, vem do título do Vimeo.
 
-    O módulo e o sub-módulo precisam existir — use criar_modulo antes. Nada é
-    publicado: o retorno é um rascunho para o professor revisar.
+    O módulo e o sub-módulo precisam existir — use criar_modulo antes. Montar
+    o curso não pede aprovação: os alunos já veem. Quando terminar, passe ao
+    professor o link `conferir_em` (o módulo no portal), para ele conferir.
     """
-    return comando(
+    return _com_onde_conferir_o_curso(comando(
         "importar_videos_como_itens",
         turma=turma,
         modulo=modulo,
         submodulo=submodulo,
         videos=videos,
-    )
+    ))
 
 
 @mcp.tool(
@@ -825,7 +830,7 @@ async def importar_pasta_vimeo_como_rascunho(
         ),
     ],
 ) -> dict:
-    """Importa uma pasta do Vimeo distribuindo os vídeos pelos módulos, em RASCUNHO.
+    """Importa uma pasta do Vimeo distribuindo os vídeos pelos módulos, já publicados.
 
     É o gesto que o professor faz em voz alta: "da 1 até a 14 é o K01, sub
     Questões da apostila; 15, 18, 22 e 25 são o K02". A faixa fala dos números
@@ -833,11 +838,13 @@ async def importar_pasta_vimeo_como_rascunho(
     lista. Vídeo cujo título não traz número legível só entra num destino sem
     faixa; do contrário sobra, e a tool avisa em vez de chutar.
 
-    Módulos e sub-módulos precisam existir antes (use criar_modulo). Cada
-    destino vira um rascunho próprio, para o professor poder liberar um
-    módulo e segurar outro.
+    Módulos e sub-módulos precisam existir antes (use criar_modulo). Montar
+    o curso não pede aprovação: os vídeos já aparecem para os alunos. O nome
+    da tool ficou de quando ela criava rascunho.
 
-    Rode `simular_importacao_vimeo` antes: é o mesmo trabalho, sem gravar.
+    Rode `simular_importacao_vimeo` antes e mostre ao professor para onde vai
+    cada faixa: é o mesmo trabalho, sem gravar. Quando terminar, passe a ele o
+    link de cada módulo (`conferir_em`) para conferir.
     """
     plano = await _ler_plano(pasta)
     return await _em_thread(_aplicar_plano, plano, turma, destinos)
@@ -1032,13 +1039,46 @@ def _com_onde_conferir_simulado(criado: dict) -> dict:
     return {**criado, "conferir_em": _onde_conferir_simulado(simulado["simulado_id"])}
 
 
+INSTRUCAO_DO_CURSO = (
+    "Já está publicado: os alunos das turmas do módulo já veem. Quando terminar, passe "
+    "o link ao professor para ele conferir no portal, com a conta de administrador. Não "
+    "é link de aprovação. Linha que ficou em rascunho (o aviso diz qual e por quê): "
+    "acerte a questão e chame publicar_rascunho, que publica sem pedir confirmação."
+)
+
+
+def _onde_fica_o_curso(modulo_id: int | None) -> str:
+    """O módulo no editor do curso: é onde o professor confere o que o Claude pôs ali."""
+    base = (get_settings().portal_url or "").rstrip("/")
+    if not modulo_id:
+        return f"{base}/admin/biblioteca/" if base else "Curso › Montar o curso"
+    return f"{base}/admin/biblioteca/?modulo={modulo_id}" if base else f"Curso › Montar o curso › módulo #{modulo_id}"
+
+
+def _com_onde_conferir_o_curso(criado: dict) -> dict:
+    """Junta ao que entrou no curso o link do módulo, para o professor conferir."""
+    rascunho = criado.get("rascunho") or {}
+    return {
+        **criado,
+        "conferir_em": _onde_fica_o_curso(rascunho.get("modulo_id")),
+        "instrucao": INSTRUCAO_DO_CURSO,
+    }
+
+
+def _com_o_curso_se_for_aula(rascunho_id: int, publicado: dict) -> dict:
+    """Linha de aula publicada por publicar_rascunho: o retorno leva o link do módulo."""
+    detalhe = _detalhe(rascunho_id)
+    if not detalhe or detalhe.get("tipo") != "ITENS":
+        return publicado
+    return {**publicado, "conferir_em": _onde_fica_o_curso(detalhe.get("modulo_id"))}
+
+
 def _onde_aprovar(rascunho_id: int, detalhe: dict | None = None) -> tuple[str, str]:
     """Onde, no portal, o professor aprova este rascunho, e o que ele clica lá.
 
-    Cada coisa é aprovada onde mora: o simulado na página dele, a questão avulsa
-    no Banco de questões. O resto (vídeos e linhas de aula) ainda é na tela de
-    Rascunhos. Sem o `detalhe` do rascunho, vale a tela de Rascunhos, que
-    aprova qualquer um.
+    Cada coisa é aprovada onde mora: o simulado na página dele, a questão no
+    Banco de questões. Vídeo e linha de aula não chegam aqui: montar o curso
+    não pede aprovação.
     """
     detalhe = detalhe or {}
     simulado = detalhe.get("simulado") or {}
@@ -1048,8 +1088,8 @@ def _onde_aprovar(rascunho_id: int, detalhe: dict | None = None) -> tuple[str, s
     if len(questoes) == 1 and not detalhe.get("itens"):
         return _onde_conferir(questoes[0]["questao_id"]), "botão 'Publicar'"
     base = (get_settings().portal_url or "").rstrip("/")
-    onde = f"{base}/admin/rascunhos/revisar/?id={rascunho_id}" if base else "Admin › Rascunhos"
-    return onde, f"rascunho #{rascunho_id}, botão 'Aprovar e publicar'"
+    onde = f"{base}/admin/questoes/" if base else "Banco de questões"
+    return onde, "as questões em rascunho ficam no alto da lista, com 'Publicar marcadas'"
 
 
 def _aprovar_no_portal(rascunho_id: int, detalhe: dict | None = None) -> dict:
@@ -1108,6 +1148,11 @@ async def publicar_rascunho(
 ) -> dict | InputRequiredResult:
     """Publica um rascunho — depois que o professor aprovar, e só então.
 
+    Vídeos e linhas de aula são a exceção: montar o curso não pede aprovação,
+    e o rascunho deles (o .docx da apostila depois de revisado, ou a linha que
+    ficou com figura pendente) publica sem pedir confirmação. Passe ao
+    professor o link `conferir_em`, do módulo, para ele conferir.
+
     Com `itens`, libera só aqueles e deixa o resto pendente: é assim que se
     publica item a item sem abrir mão da aprovação, que fica gravada no
     rascunho. Sem `itens`, publica tudo de uma vez — o caso da pasta do Vimeo
@@ -1120,8 +1165,8 @@ async def publicar_rascunho(
     devolve onde aprovar no portal: repasse ao professor, sem insistir.
 
     Se ele recusar, nada acontece — e a proposta continua no portal para
-    revisar com calma: o simulado na página dele, a questão avulsa no Banco de
-    questões, e o resto em Rascunhos. O retorno diz onde (`aprovar_em`).
+    revisar com calma: o simulado na página dele, a questão no Banco de
+    questões. O retorno diz onde (`aprovar_em`).
 
     Publicado, o conteúdo passa a aparecer imediatamente para os alunos daquela
     turma (e só daquela turma).
@@ -1139,11 +1184,14 @@ async def publicar_rascunho(
             return _recusado(alvo, await _em_thread(_detalhe, alvo))
         return await _em_thread(_confirmar_e_publicar, alvo, itens)
 
-    # Primeira rodada. Se um humano já aprovou no portal, publica direto.
+    # Primeira rodada. Se um humano já aprovou no portal, ou se é montagem do
+    # curso (vídeos e linhas de aula), publica direto.
     try:
-        return await _em_thread(_publicar, alvo, itens)
+        publicado = await _em_thread(_publicar, alvo, itens)
     except PrecisaDeAprovacao:
         pass
+    else:
+        return await _em_thread(_com_o_curso_se_for_aula, alvo, publicado)
 
     # Cliente que não sabe perguntar nada ao usuário: os dois canais abaixo não
     # chegariam ao professor. A aprovação continua humana — só muda de lugar.

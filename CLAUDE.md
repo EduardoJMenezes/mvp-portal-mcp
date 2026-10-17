@@ -12,9 +12,12 @@ API em Java com `X-Servico` (segredo) e `X-Operador` (quem o OAuth
 autenticou). O Java relê o papel no banco e fixa o canal MCP: não existe campo
 para o adaptador se passar pelo professor no navegador.
 
-"A IA propõe. O humano aprova. O backend publica." — `publicar_rascunho` só
-publica depois do aceite do professor (elicitation) ou da aprovação no portal;
-quem faz valer isso é a API (`urn:plataforma:aprovacao-necessaria`).
+"A IA propõe. O humano aprova. O backend publica." — para questão e simulado,
+`publicar_rascunho` só publica depois do aceite do professor (elicitation) ou da
+aprovação no portal; quem faz valer isso é a API
+(`urn:plataforma:aprovacao-necessaria`). Montar o curso é a exceção (17/10/2026):
+vídeos e linhas de aula saem publicados, e a tool devolve o link do módulo
+(`conferir_em`) para o professor conferir — não para aprovar.
 
 ## Onde está o resto
 

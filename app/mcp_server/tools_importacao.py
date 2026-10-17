@@ -133,8 +133,12 @@ def importar_questoes_docx(
     número do documento no nome ("Q04"). Quando ele avisar, chame
     revisar_importacao — ali `simulado_id` vem vazio, porque não há prova.
 
-    O aluno responde cada questão uma vez, na aula, e vê o gabarito e a
-    resolução em seguida. Nada aparece para ele até publicar_rascunho.
+    O rascunho é para você revisar o que o leitor entendeu, não para pedir
+    aprovação: montar o curso não pede. Revisado e acertado, chame
+    publicar_rascunho com o `rascunho_id` da revisão — publica sem pedir
+    confirmação — e passe ao professor o link `conferir_em`, do módulo, para
+    ele conferir. O aluno responde cada questão uma vez, na aula, e vê o
+    gabarito e a resolução em seguida.
     """
     return _com_link(
         comando(

@@ -1,4 +1,4 @@
-"""Questões da apostila dentro da aula: pelo Claude, continuam nascendo em rascunho."""
+"""Questões da apostila dentro da aula: pelo Claude, já saem publicadas (montar o curso não pede aprovação)."""
 
 import json
 
@@ -11,7 +11,7 @@ from tests.test_mcp import _detalhe, _quem_esta_pedindo
 QUATRO = {"A": "36 g", "B": "18 g", "C": "20 g", "D": "34 g"}
 
 
-async def test_questoes_na_aula_nascem_em_rascunho_com_o_numero_no_nome(db, mundo, api_java, monkeypatch):
+async def test_questoes_na_aula_saem_publicadas_com_o_numero_no_nome(db, mundo, api_java, monkeypatch):
     from fastmcp import Client
 
     _quem_esta_pedindo(monkeypatch, mundo)
@@ -26,32 +26,41 @@ async def test_questoes_na_aula_nascem_em_rascunho_com_o_numero_no_nome(db, mund
             ],
         })).data
 
-    assert resposta["aviso"].startswith("Nada foi publicado")
+    assert resposta["aviso"].startswith("Publicado: 2 linha(s)")
+    assert "conferir_em" in resposta
     rascunho = resposta["rascunho"]
-    assert [(i["nome"], i["status"]) for i in rascunho["itens"]] == [("Q04", "RASCUNHO"), ("Desafio", "RASCUNHO")]
+    assert [(i["nome"], i["status"]) for i in rascunho["itens"]] == [("Q04", "PUBLICADO"), ("Desafio", "PUBLICADO")]
     # A apostila para na D: quatro alternativas fazem uma questão completa.
     assert list(rascunho["questoes"][0]["alternativas"]) == ["A", "B", "C", "D"]
     assert rascunho["questoes"][0]["completa"] is True
-    assert rascunho["aprovado_por"] is None
+    assert rascunho["aprovado_via"] == "MONTAGEM_DO_CURSO"
 
 
-async def test_questoes_na_aula_nao_publicam_sem_o_ok_do_professor(db, mundo, api_java, monkeypatch):
+async def test_linha_com_figura_pendente_fica_e_sai_depois_sem_pedir_confirmacao(db, mundo, api_java, monkeypatch):
     from fastmcp import Client
+
+    from app.mcp_server.api import comando
 
     _quem_esta_pedindo(monkeypatch, mundo)
 
     async with Client(mcp) as cliente:
-        rid = (await cliente.call_tool("criar_questoes_como_itens", {
+        resposta = (await cliente.call_tool("criar_questoes_como_itens", {
             "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
-            "questoes": [{"enunciado": "Sem turma: acha o módulo na biblioteca", "alternativas": QUATRO,
+            "questoes": [{"numero": 9, "enunciado": "Veja o gráfico ![](figura:pendente)", "alternativas": QUATRO,
                           "gabarito": "B"}],
-        })).data["rascunho"]["rascunho_id"]
+        })).data
+        rid = resposta["rascunho"]["rascunho_id"]
+        assert "Ficaram em rascunho: 'Q09'" in resposta["aviso"]
+        assert _detalhe(rid)["status"] == "RASCUNHO"
 
-        # O cliente de teste não mostra formulário: a tool não publica, manda aprovar no portal.
+        # O Claude acerta a figura; publicar a linha não pede confirmação (cliente sem formulário).
+        questao = resposta["rascunho"]["itens"][0]["questao_id"]
+        comando("editar_questao", questao=str(questao), imagem_pendente=False)
         publicado = (await cliente.call_tool("publicar_rascunho", {"rascunho_id": rid})).data
 
-    assert publicado["publicado"] is False
-    assert _detalhe(rid)["status"] == "RASCUNHO"
+    assert publicado["publicado"] is True
+    assert "conferir_em" in publicado
+    assert _detalhe(rid)["status"] == "PUBLICADO"
 
 
 async def test_questao_em_rascunho_de_outro_lugar_nao_vira_linha(db, mundo, api_java, monkeypatch):

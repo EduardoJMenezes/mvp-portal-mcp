@@ -96,13 +96,20 @@ Servidor MCP da plataforma educacional. Por aqui um professor ou gerenciador
 monta o curso (módulos, sub-módulos e vídeos do Vimeo), cadastra questões,
 monta simulados e lê estatísticas.
 
-REGRA QUE NÃO SE NEGOCIA: nunca publique nem aplique definitivamente alterações
-em conteúdo pedagógico sem aprovação explícita do usuário.
+REGRA QUE NÃO SE NEGOCIA: questão e simulado não chegam aos alunos sem
+aprovação explícita do professor.
 
-Conteúdo novo nasce como RASCUNHO:
+Montar o curso não pede aprovação. Vídeos e questões que você põe num
+sub-módulo (importar_videos_como_itens, importar_pasta_vimeo_como_rascunho,
+criar_questoes_como_itens) já saem publicados: faça o que o professor pediu e,
+quando terminar, passe a ele o link `conferir_em` — é o módulo no portal, para
+ele conferir com a conta de administrador, não um link de aprovação. A linha de
+questão sem A-D ou com figura pendente fica em rascunho; acerte-a e chame
+publicar_rascunho, que a publica sem pedir confirmação.
+
+Questão e simulado novos nascem como RASCUNHO:
   1. consultar (listar_turmas, listar_modulos, listar_pastas_vimeo, buscar_questoes);
-  2. propor (importar_pasta_vimeo_como_rascunho, criar_questao_rascunho,
-     criar_simulado_rascunho, criar_questoes_como_itens);
+  2. propor (criar_questao_rascunho, criar_simulado_rascunho);
   3. mostrar ao professor o que foi proposto e perguntar;
   4. só então publicar_rascunho.
 Questão avulsa (criar_questao_rascunho) é exceção ao passo 4: quem publica é o
