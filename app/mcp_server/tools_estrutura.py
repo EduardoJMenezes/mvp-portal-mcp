@@ -132,6 +132,36 @@ def criar_submodulo(
     return comando("criar_submodulo", turma=turma, modulo=modulo, nome=nome)
 
 
+@mcp.tool(name="definir_folha_de_respostas", annotations=ALTERA)
+def definir_folha_de_respostas(
+    turma: Annotated[str, Field(description="Nome ou id da turma")],
+    modulo: Annotated[str, Field(description="Nome ou id do módulo")],
+    submodulo: Annotated[str, Field(description="O sub-módulo das questões, ex.: 'Questões da apostila'")],
+    ativa: Annotated[bool, Field(description="true liga a folha; false volta à resposta uma por uma")] = True,
+) -> dict:
+    """Transforma as questões de um sub-módulo em folha de respostas — ou desfaz.
+
+    **Antes de chamar, mostre ao professor no chat o que muda e espere o ok
+    dele.**
+
+    É o caminho de "o aluno resolve na apostila e lança o gabarito dele na
+    plataforma": em vez de responder questão por questão e ver o gabarito na
+    hora, o aluno marca as letras de todas numa folha (Q01, Q02…) e envia de
+    uma vez. Até enviar, nenhuma questão da folha mostra gabarito nem
+    resolução; depois, a folha volta corrigida e cada questão abre com a
+    resolução. Vale o primeiro envio. As respostas entram no desempenho por
+    assunto como as da aula comum.
+
+    As questões entram antes ou depois, do jeito de sempre
+    (criar_questoes_como_itens, importar_questoes_docx); a folha usa só as
+    linhas de questão do sub-módulo. Quem já tinha respondido alguma uma por
+    uma mantém a resposta e lança só o que falta — `alunos_que_ja_responderam`
+    diz quantos. Desligar devolve a regra da aula comum para o que ainda não
+    foi respondido.
+    """
+    return comando("definir_folha_de_respostas", turma=turma, modulo=modulo, submodulo=submodulo, ativa=ativa)
+
+
 @mcp.tool(name="editar_modulo", annotations=ALTERA)
 def editar_modulo(
     turma: Annotated[str, Field(description="Nome ou id da turma")],

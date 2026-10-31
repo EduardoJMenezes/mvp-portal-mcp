@@ -113,3 +113,28 @@ async def test_docx_da_apostila_vira_linhas_do_submodulo(db, mundo, api_java, mo
     assert [i["nome"] for i in rascunho["itens"]] == ["Q01", "Q02"]
     assert [list(q["alternativas"]) for q in rascunho["questoes"]] == [list("ABCD"), list("ABCDE")]
     assert rascunho["simulado"] is None
+
+
+async def test_folha_de_respostas_liga_e_desliga_pelo_claude(db, mundo, api_java, monkeypatch):
+    from fastmcp import Client
+
+    _quem_esta_pedindo(monkeypatch, mundo)
+
+    async with Client(mcp) as cliente:
+        await cliente.call_tool("criar_questoes_como_itens", {
+            "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
+            "questoes": [{"numero": 1, "enunciado": "Qual a massa de 2 mol de água?", "alternativas": QUATRO,
+                          "gabarito": "A"}],
+        })
+        ligada = (await cliente.call_tool("definir_folha_de_respostas", {
+            "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
+        })).data
+        desligada = (await cliente.call_tool("definir_folha_de_respostas", {
+            "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
+            "ativa": False,
+        })).data
+
+    assert ligada["folha_de_respostas"] is True
+    assert ligada["questoes"] == 1
+    assert "de uma vez" in ligada["mensagem"]
+    assert desligada["folha_de_respostas"] is False

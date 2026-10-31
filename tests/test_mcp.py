@@ -22,7 +22,7 @@ from tests.senhas import hash_senha, hash_token, novo_token_mcp
 
 # Alteram o curso sem rascunho no meio: a confirmação é o preview no chat.
 ALTERAM_NA_HORA = {
-    "criar_modulo", "criar_submodulo", "editar_modulo", "editar_item",
+    "criar_modulo", "criar_submodulo", "definir_folha_de_respostas", "editar_modulo", "editar_item",
     "remover_do_curso", "cadastrar_assunto", "classificar_videos", "classificar_questoes",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado", "liberar_resultado_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
