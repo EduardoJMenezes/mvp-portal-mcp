@@ -115,7 +115,7 @@ async def test_docx_da_apostila_vira_linhas_do_submodulo(db, mundo, api_java, mo
     assert rascunho["simulado"] is None
 
 
-async def test_folha_de_respostas_liga_e_desliga_pelo_claude(db, mundo, api_java, monkeypatch):
+async def test_gabarito_no_fim_liga_e_desliga_pelo_claude(db, mundo, api_java, monkeypatch):
     from fastmcp import Client
 
     _quem_esta_pedindo(monkeypatch, mundo)
@@ -126,15 +126,15 @@ async def test_folha_de_respostas_liga_e_desliga_pelo_claude(db, mundo, api_java
             "questoes": [{"numero": 1, "enunciado": "Qual a massa de 2 mol de água?", "alternativas": QUATRO,
                           "gabarito": "A"}],
         })
-        ligada = (await cliente.call_tool("definir_folha_de_respostas", {
+        ligada = (await cliente.call_tool("definir_gabarito_no_fim", {
             "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
         })).data
-        desligada = (await cliente.call_tool("definir_folha_de_respostas", {
+        desligada = (await cliente.call_tool("definir_gabarito_no_fim", {
             "turma": "Extensivo 2027", "modulo": "K01 - Estequiometria", "submodulo": "Questões da apostila",
             "ativa": False,
         })).data
 
-    assert ligada["folha_de_respostas"] is True
+    assert ligada["gabarito_no_fim"] is True
     assert ligada["questoes"] == 1
-    assert "de uma vez" in ligada["mensagem"]
-    assert desligada["folha_de_respostas"] is False
+    assert "depois da última" in ligada["mensagem"]
+    assert desligada["gabarito_no_fim"] is False

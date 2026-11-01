@@ -132,34 +132,32 @@ def criar_submodulo(
     return comando("criar_submodulo", turma=turma, modulo=modulo, nome=nome)
 
 
-@mcp.tool(name="definir_folha_de_respostas", annotations=ALTERA)
-def definir_folha_de_respostas(
+@mcp.tool(name="definir_gabarito_no_fim", annotations=ALTERA)
+def definir_gabarito_no_fim(
     turma: Annotated[str, Field(description="Nome ou id da turma")],
     modulo: Annotated[str, Field(description="Nome ou id do módulo")],
     submodulo: Annotated[str, Field(description="O sub-módulo das questões, ex.: 'Questões da apostila'")],
-    ativa: Annotated[bool, Field(description="true liga a folha; false volta à resposta uma por uma")] = True,
+    ativa: Annotated[bool, Field(description="true guarda a correção até a última questão; false volta à correção na hora")] = True,
 ) -> dict:
-    """Transforma as questões de um sub-módulo em folha de respostas — ou desfaz.
+    """Faz as questões de um sub-módulo só mostrarem a correção no fim — ou desfaz.
 
     **Antes de chamar, mostre ao professor no chat o que muda e espere o ok
     dele.**
 
-    É o caminho de "o aluno resolve na apostila e lança o gabarito dele na
-    plataforma": em vez de responder questão por questão e ver o gabarito na
-    hora, o aluno marca as letras de todas numa folha (Q01, Q02…) e envia de
-    uma vez. Até enviar, nenhuma questão da folha mostra gabarito nem
-    resolução; depois, a folha volta corrigida e cada questão abre com a
-    resolução. Vale o primeiro envio. As respostas entram no desempenho por
-    assunto como as da aula comum.
+    É o caminho das questões da apostila: o aluno já resolveu no papel e
+    responde aqui, uma por uma, vendo cada questão inteira (enunciado,
+    figuras, alternativas). Com o gabarito no fim, a resposta fica registrada
+    mas ele não fica sabendo se acertou: acerto, gabarito e resolução de todas
+    saem juntos quando ele responde a última questão do sub-módulo. Vale a
+    primeira resposta, como na aula comum, e até lá o desempenho por assunto
+    dele não conta essas questões (o professor vê desde a primeira).
 
     As questões entram antes ou depois, do jeito de sempre
-    (criar_questoes_como_itens, importar_questoes_docx); a folha usa só as
-    linhas de questão do sub-módulo. Quem já tinha respondido alguma uma por
-    uma mantém a resposta e lança só o que falta — `alunos_que_ja_responderam`
-    diz quantos. Desligar devolve a regra da aula comum para o que ainda não
-    foi respondido.
+    (criar_questoes_como_itens, importar_questoes_docx). Desligar volta à
+    correção na hora, inclusive para o que já foi respondido;
+    `alunos_que_ja_responderam` diz quantos alunos já responderam alguma.
     """
-    return comando("definir_folha_de_respostas", turma=turma, modulo=modulo, submodulo=submodulo, ativa=ativa)
+    return comando("definir_gabarito_no_fim", turma=turma, modulo=modulo, submodulo=submodulo, ativa=ativa)
 
 
 @mcp.tool(name="editar_modulo", annotations=ALTERA)
