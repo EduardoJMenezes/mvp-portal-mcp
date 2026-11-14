@@ -16,6 +16,7 @@ import app.mcp_server.tools_simulado  # noqa: F401  isort:skip
 import app.mcp_server.tools_aulas  # noqa: F401  isort:skip
 import app.mcp_server.tools_menu  # noqa: F401  isort:skip
 import app.mcp_server.tools_agenda  # noqa: F401  isort:skip
+import app.mcp_server.tools_vendas  # noqa: F401  isort:skip
 from app.identidade import Papel
 from tests.modelos import TokenMCP, Usuario
 from tests.senhas import hash_senha, hash_token, novo_token_mcp
@@ -26,7 +27,7 @@ ALTERAM_NA_HORA = {
     "remover_do_curso", "cadastrar_assunto", "classificar_videos", "classificar_questoes",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado", "liberar_resultado_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
-    "criar_eventos", "editar_evento", "remover_evento",
+    "criar_eventos", "editar_evento", "remover_evento", "montar_venda",
 }
 
 
