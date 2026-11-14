@@ -27,7 +27,7 @@ ALTERAM_NA_HORA = {
     "remover_do_curso", "cadastrar_assunto", "classificar_videos", "classificar_questoes",
     "editar_questao", "remover_questao", "editar_simulado", "remover_simulado", "liberar_resultado_simulado",
     "definir_menu", "copiar_menu", "atribuir_turmas", "copiar_modulos",
-    "criar_eventos", "editar_evento", "remover_evento", "montar_venda",
+    "criar_eventos", "editar_evento", "remover_evento", "montar_venda", "criar_turma",
 }
 
 

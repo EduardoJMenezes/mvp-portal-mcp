@@ -43,3 +43,14 @@ async def test_monta_a_venda_fora_do_ar_e_poe_no_ar_depois(db, mundo, api_java, 
     assert plano["hoje"]["pix_centavos"] == 170000
     assert plano["link_publico"].endswith("/assinar/extensivo-2027")
     assert resumo["envios_pendentes"] == []
+
+
+async def test_cria_a_turma_pelo_chat(db, mundo, api_java, monkeypatch):
+    _quem_esta_pedindo(monkeypatch, mundo)
+
+    async with Client(mcp) as cliente:
+        criada = (await cliente.call_tool("criar_turma", {"nome": "Revisão 2027"})).structured_content
+        turmas = (await cliente.call_tool("listar_turmas", {})).structured_content
+
+    assert criada["nome"] == "Revisão 2027"
+    assert "Revisão 2027" in [t["nome"] for t in turmas["result"]]

@@ -80,6 +80,23 @@ _ICONES = (
 )
 
 
+@mcp.tool(name="criar_turma", annotations=ALTERA)
+def criar_turma(
+    nome: Annotated[str, Field(description="Nome da turma, ex.: 'Extensivo 2027 Online', 'Revisão 2027' (até 120 letras)")],
+) -> dict:
+    """Cria uma turma nova, vazia: sem alunos e sem módulos.
+
+    **Antes de chamar, mostre ao professor no chat o nome da turma e espere o
+    ok dele.** Confira com listar_turmas que não existe uma parecida (a API
+    recusa nome repetido, sem diferença de maiúsculas).
+
+    Depois, os capítulos chegam com atribuir_turmas ou copiar_modulos, e os
+    alunos entram pela venda (montar_venda abre a turma para quem paga) ou
+    pelo portal (Admin › Turmas e alunos). Retorna {id, nome}.
+    """
+    return comando("criar_turma", nome=nome)
+
+
 @mcp.tool(name="criar_modulo", annotations=ALTERA)
 def criar_modulo(
     turma: Annotated[
